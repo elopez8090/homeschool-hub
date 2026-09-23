@@ -23,8 +23,8 @@ export default function StateDirectory() {
     <section className="space-y-6">
       <div className="flex flex-col gap-3 sm:flex-row sm:items-end sm:justify-between">
         <div>
-          <h2 className="text-2xl font-semibold text-navy">Browse by state</h2>
-          <p className="mt-1 text-sm text-navy/70">
+          <h2 className="text-2xl font-semibold text-blue-900">Browse by state</h2>
+          <p className="mt-1 text-sm text-slate-600">
             Choose a state to view Christian homeschool programs in that area.
           </p>
         </div>
@@ -35,13 +35,13 @@ export default function StateDirectory() {
             value={query}
             onChange={(event) => setQuery(event.target.value)}
             placeholder="Search states..."
-            className="w-full rounded-lg border border-navy/15 bg-white px-3 py-2 text-sm text-navy outline-none ring-gold/40 placeholder:text-navy/40 focus:ring-2"
+            className="w-full rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm text-slate-800 outline-none ring-blue-300 placeholder:text-slate-400 focus:ring-2"
           />
         </label>
       </div>
 
       {filteredStates.length === 0 ? (
-        <p className="rounded-lg border border-dashed border-navy/20 bg-white px-4 py-8 text-center text-navy/70">
+        <p className="rounded-lg border border-dashed border-blue-200 bg-white px-4 py-8 text-center text-slate-600">
           No states match “{query}”.
         </p>
       ) : (
@@ -50,10 +50,10 @@ export default function StateDirectory() {
             <li key={state.slug}>
               <Link
                 href={`/${state.slug}`}
-                className="flex items-center justify-between rounded-lg border border-navy/10 bg-white px-4 py-3 text-navy shadow-sm transition hover:border-gold hover:shadow"
+                className="flex items-center justify-between rounded-lg border border-blue-100 bg-white px-4 py-3 text-blue-900 shadow-sm transition hover:border-blue-400 hover:shadow"
               >
                 <span className="font-medium">{state.name}</span>
-                <span className="text-xs tracking-wide text-navy/50">
+                <span className="text-xs tracking-wide text-blue-700/60">
                   {state.abbreviation}
                 </span>
               </Link>

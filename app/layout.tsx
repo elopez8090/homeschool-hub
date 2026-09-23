@@ -31,13 +31,13 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-cream text-foreground antialiased`}
       >
         <div className="flex min-h-screen flex-col font-[family-name:var(--font-geist-sans)]">
-          <header className="border-b border-navy/10 bg-navy text-cream">
+          <header className="border-b border-blue-900/20 bg-blue-800 text-white">
             <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
               <Link href="/" className="text-lg font-semibold tracking-tight">
                 Christian Homeschools Hub
               </Link>
-              <nav className="text-sm text-cream/80">
-                <Link href="/" className="hover:text-gold">
+              <nav className="text-sm text-blue-100">
+                <Link href="/" className="hover:text-white">
                   Browse states
                 </Link>
               </nav>
