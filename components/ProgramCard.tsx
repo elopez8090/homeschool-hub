@@ -1,6 +1,7 @@
 import Link from "next/link";
 import { EsaBadge, FeaturedBadge } from "@/components/ProgramBadges";
 import type { Program } from "@/lib/types";
+import { isEsaActive, isFeaturedActive } from "@/lib/upgrades";
 
 function excerpt(text: string, max = 150) {
   const value = (text || "").trim();
@@ -18,8 +19,8 @@ export default function ProgramCard({
   return (
     <article className="flex h-full flex-col rounded-xl border border-blue-100 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md">
       <div className="flex flex-wrap gap-2">
-        {program.featured ? <FeaturedBadge /> : null}
-        {program.esa_verified ? <EsaBadge /> : null}
+        {isFeaturedActive(program) ? <FeaturedBadge /> : null}
+        {isEsaActive(program) ? <EsaBadge /> : null}
       </div>
       <h3 className="mt-3 text-lg font-semibold text-blue-900">
         <Link href={`/${stateSlug}/${program.id}`} className="hover:text-blue-700">

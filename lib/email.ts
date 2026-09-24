@@ -143,3 +143,44 @@ export async function emailOwnerRejected(details: {
     ].join("\n"),
   });
 }
+
+export async function emailOwnerUpgradeActivated(details: {
+  name: string;
+  contact_email: string;
+  planName: string;
+  listingUrl?: string;
+  nextBillingDate?: string;
+}) {
+  return sendEmail({
+    to: details.contact_email,
+    subject: `${details.planName} is now active for ${details.name}`,
+    text: [
+      `Thank you! Your ${details.planName} subscription for ${details.name} is active.`,
+      details.listingUrl ? `View your listing: ${details.listingUrl}` : "",
+      details.nextBillingDate
+        ? `Next billing date: ${details.nextBillingDate}`
+        : "Your subscription renews automatically each month.",
+      "",
+      "If you have questions about billing, reply to this email.",
+    ]
+      .filter(Boolean)
+      .join("\n"),
+  });
+}
+
+export async function emailOwnerUpgradeCanceled(details: {
+  name: string;
+  contact_email: string;
+  planName: string;
+}) {
+  return sendEmail({
+    to: details.contact_email,
+    subject: `${details.planName} subscription canceled for ${details.name}`,
+    text: [
+      `Your ${details.planName} subscription for ${details.name} has ended.`,
+      "The upgrade will no longer appear on your listing.",
+      "",
+      "You can start a new subscription from your program page at any time.",
+    ].join("\n"),
+  });
+}

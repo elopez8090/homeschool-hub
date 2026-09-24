@@ -26,9 +26,10 @@ export default function RootLayout({
   children: React.ReactNode;
 }>) {
   return (
-    <html lang="en">
+    <html lang="en" suppressHydrationWarning>
       <body
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-cream text-foreground antialiased`}
+        suppressHydrationWarning
       >
         <div className="flex min-h-screen flex-col font-[family-name:var(--font-geist-sans)]">
           <header className="border-b border-blue-900/20 bg-blue-800 text-white">

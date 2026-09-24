@@ -6,6 +6,7 @@ import LoadingSpinner from "@/components/LoadingSpinner";
 import ProgramCard from "@/components/ProgramCard";
 import SearchFilters from "@/components/SearchFilters";
 import { PROGRAM_CATEGORIES, type Program } from "@/lib/types";
+import { isEsaActive, isFeaturedActive } from "@/lib/upgrades";
 
 export default function ProgramDirectory({
   stateSlug,
@@ -75,9 +76,9 @@ export default function ProgramDirectory({
       const matchesName = term ? program.name.toLowerCase().includes(term) : true;
       const matchesCity = city ? program.city === city : true;
       const matchesCategory = category ? program.category === category : true;
-      const matchesEsa = esaOnly ? program.esa_verified : true;
+      const matchesEsa = esaOnly ? isEsaActive(program) : true;
       return matchesName && matchesCity && matchesCategory && matchesEsa;
-    });
+    }).sort((a, b) => Number(isFeaturedActive(b)) - Number(isFeaturedActive(a)));
   }, [programs, query, city, category, esaOnly]);
 
   if (loading) {
