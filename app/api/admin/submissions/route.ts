@@ -1,10 +1,10 @@
 import { NextRequest, NextResponse } from "next/server";
-import { getPasswordFromRequest, isValidAdminPassword, unauthorized } from "@/lib/admin";
+import { isAdminRequest, unauthorized } from "@/lib/admin";
 import { fetchPendingSubmissions } from "@/lib/programs";
 import { getServerSupabase } from "@/lib/supabase-server";
 
 export async function GET(request: NextRequest) {
-  if (!isValidAdminPassword(getPasswordFromRequest(request))) {
+  if (!(await isAdminRequest(request))) {
     return unauthorized();
   }
 

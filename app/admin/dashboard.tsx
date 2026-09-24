@@ -1,8 +1,7 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
-import LoadingSpinner from "@/components/LoadingSpinner";
+import { useState } from "react";
+import { useRouter } from "next/navigation";
 import type { PendingSubmission } from "@/lib/types";
 
 function formatDate(value: string) {
@@ -15,89 +14,28 @@ function formatDate(value: string) {
   });
 }
 
-export default function AdminDashboard() {
+export default function AdminDashboard({
+  initialSubmissions,
+}: {
+  initialSubmissions: PendingSubmission[];
+}) {
   const router = useRouter();
-  const searchParams = useSearchParams();
-  const password = searchParams.get("password") || "";
-
-  const [loginPassword, setLoginPassword] = useState("");
-  const [submissions, setSubmissions] = useState<PendingSubmission[]>([]);
-  const [loading, setLoading] = useState(Boolean(password));
+  const [submissions, setSubmissions] = useState(initialSubmissions);
   const [error, setError] = useState("");
-  const [unauthorized, setUnauthorized] = useState(!password);
+  const [success, setSuccess] = useState("");
   const [busyId, setBusyId] = useState("");
-
-  useEffect(() => {
-    if (!password) {
-      setUnauthorized(true);
-      setLoading(false);
-      return;
-    }
-
-    let active = true;
-
-    async function load() {
-      setLoading(true);
-      setError("");
-
-      try {
-        const response = await fetch("/api/admin/submissions", {
-          headers: { "x-admin-password": password },
-        });
-
-        if (response.status === 401) {
-          if (active) {
-            setUnauthorized(true);
-            setSubmissions([]);
-          }
-          return;
-        }
-
-        const payload = await response.json();
-        if (!response.ok) {
-          throw new Error(payload.error || "Unable to load submissions.");
-        }
-
-        if (active) {
-          setUnauthorized(false);
-          setSubmissions(payload.submissions || []);
-        }
-      } catch (loadError) {
-        if (active) {
-          setError(
-            loadError instanceof Error
-              ? loadError.message
-              : "Unable to load submissions.",
-          );
-        }
-      } finally {
-        if (active) setLoading(false);
-      }
-    }
-
-    load();
-    return () => {
-      active = false;
-    };
-  }, [password]);
-
-  function handleLogin(event: React.FormEvent<HTMLFormElement>) {
-    event.preventDefault();
-    router.push(`/admin/dashboard?password=${encodeURIComponent(loginPassword)}`);
-  }
+  const [loggingOut, setLoggingOut] = useState(false);
 
   async function review(id: string, action: "approve" | "reject") {
     setBusyId(id);
     setError("");
+    setSuccess("");
 
     try {
-      const response = await fetch(`/api/submissions/${action}`, {
+      const response = await fetch(`/api/admin/${action}`, {
         method: "POST",
-        headers: {
-          "Content-Type": "application/json",
-          "x-admin-password": password,
-        },
-        body: JSON.stringify({ id }),
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ submission_id: id }),
       });
       const payload = await response.json();
 
@@ -106,6 +44,11 @@ export default function AdminDashboard() {
       }
 
       setSubmissions((current) => current.filter((item) => item.id !== id));
+      setSuccess(
+        action === "approve"
+          ? "Program approved. It is now live and the owner has been notified."
+          : "Submission rejected. The owner has been notified.",
+      );
     } catch (reviewError) {
       setError(
         reviewError instanceof Error
@@ -117,41 +60,31 @@ export default function AdminDashboard() {
     }
   }
 
-  if (unauthorized) {
-    return (
-      <form
-        onSubmit={handleLogin}
-        className="mx-auto max-w-md space-y-4 rounded-xl border border-blue-100 bg-white p-6 shadow-sm"
-      >
-        <h1 className="text-2xl font-semibold text-blue-900">Admin login</h1>
-        <p className="text-sm text-slate-600">
-          Enter the admin password to review pending submissions.
-        </p>
-        <input
-          type="password"
-          value={loginPassword}
-          onChange={(event) => setLoginPassword(event.target.value)}
-          placeholder="Password"
-          className="w-full rounded-lg border border-blue-200 px-3 py-2 text-sm outline-none ring-blue-300 focus:ring-2"
-        />
-        <button
-          type="submit"
-          className="w-full rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
-        >
-          Continue
-        </button>
-      </form>
-    );
+  async function handleLogout() {
+    setLoggingOut(true);
+    await fetch("/api/admin/logout", { method: "POST" });
+    router.push("/admin");
+    router.refresh();
   }
 
   return (
     <div className="space-y-6">
-      <div>
-        <h1 className="text-3xl font-semibold text-blue-900">Admin dashboard</h1>
-        <p className="mt-2 text-sm text-slate-600">
-          Review pending program submissions. Approving a listing publishes it
-          and emails the program owner.
-        </p>
+      <div className="flex items-start justify-between gap-4">
+        <div>
+          <h1 className="text-3xl font-semibold text-blue-900">Welcome, Admin!</h1>
+          <p className="mt-2 text-sm text-slate-600">
+            Review pending program submissions. Approving a listing publishes it
+            and emails the program owner.
+          </p>
+        </div>
+        <button
+          type="button"
+          onClick={handleLogout}
+          disabled={loggingOut}
+          className="rounded-lg border border-blue-200 bg-white px-3 py-2 text-sm font-medium text-blue-800 hover:bg-blue-50 disabled:opacity-50"
+        >
+          {loggingOut ? "Logging out..." : "Logout"}
+        </button>
       </div>
 
       {error ? (
@@ -160,56 +93,68 @@ export default function AdminDashboard() {
         </p>
       ) : null}
 
-      {loading ? (
-        <LoadingSpinner label="Loading submissions..." />
-      ) : submissions.length === 0 ? (
+      {success ? (
+        <p className="rounded-lg border border-green-200 bg-green-50 px-3 py-2 text-sm text-green-800">
+          {success}
+        </p>
+      ) : null}
+
+      {submissions.length === 0 ? (
         <p className="rounded-xl border border-dashed border-blue-200 bg-white px-6 py-10 text-center text-slate-600">
           No pending submissions right now.
         </p>
       ) : (
-        <ul className="space-y-4">
-          {submissions.map((submission) => (
-            <li
-              key={submission.id}
-              className="rounded-xl border border-blue-100 bg-white p-5 shadow-sm"
-            >
-              <div className="flex flex-col gap-4 sm:flex-row sm:items-start sm:justify-between">
-                <div>
-                  <h2 className="text-lg font-semibold text-blue-900">
+        <div className="overflow-x-auto rounded-xl border border-blue-100 bg-white shadow-sm">
+          <table className="min-w-full text-left text-sm">
+            <thead className="bg-blue-50 text-blue-900">
+              <tr>
+                <th className="px-4 py-3 font-semibold">Program name</th>
+                <th className="px-4 py-3 font-semibold">City</th>
+                <th className="px-4 py-3 font-semibold">Category</th>
+                <th className="px-4 py-3 font-semibold">Contact email</th>
+                <th className="px-4 py-3 font-semibold">Submitted date</th>
+                <th className="px-4 py-3 font-semibold">Actions</th>
+              </tr>
+            </thead>
+            <tbody>
+              {submissions.map((submission) => (
+                <tr key={submission.id} className="border-t border-blue-100">
+                  <td className="px-4 py-3 font-medium text-blue-900">
                     {submission.name}
-                  </h2>
-                  <p className="mt-1 text-sm text-slate-600">
-                    {submission.city} · {submission.category}
-                  </p>
-                  <p className="mt-1 text-sm text-slate-600">
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">{submission.city}</td>
+                  <td className="px-4 py-3 text-slate-700">{submission.category}</td>
+                  <td className="px-4 py-3 text-slate-700">
                     {submission.contact_email}
-                  </p>
-                  <p className="mt-1 text-xs text-slate-500">
-                    Submitted {formatDate(submission.submitted_at)}
-                  </p>
-                </div>
-                <div className="flex gap-2">
-                  <button
-                    type="button"
-                    disabled={busyId === submission.id}
-                    onClick={() => review(submission.id, "approve")}
-                    className="rounded-lg bg-green-700 px-3 py-2 text-sm font-medium text-white hover:bg-green-800 disabled:opacity-50"
-                  >
-                    Approve
-                  </button>
-                  <button
-                    type="button"
-                    disabled={busyId === submission.id}
-                    onClick={() => review(submission.id, "reject")}
-                    className="rounded-lg border border-red-200 bg-red-50 px-3 py-2 text-sm font-medium text-red-700 hover:bg-red-100 disabled:opacity-50"
-                  >
-                    Reject
-                  </button>
-                </div>
-              </div>
-            </li>
-          ))}
-        </ul>
+                  </td>
+                  <td className="px-4 py-3 text-slate-700">
+                    {formatDate(submission.submitted_at)}
+                  </td>
+                  <td className="px-4 py-3">
+                    <div className="flex flex-wrap gap-2">
+                      <button
+                        type="button"
+                        disabled={busyId === submission.id}
+                        onClick={() => review(submission.id, "approve")}
+                        className="rounded-lg bg-green-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-green-700 disabled:opacity-50"
+                      >
+                        {busyId === submission.id ? "Working..." : "Approve"}
+                      </button>
+                      <button
+                        type="button"
+                        disabled={busyId === submission.id}
+                        onClick={() => review(submission.id, "reject")}
+                        className="rounded-lg bg-red-600 px-3 py-1.5 text-sm font-medium text-white hover:bg-red-700 disabled:opacity-50"
+                      >
+                        Reject
+                      </button>
+                    </div>
+                  </td>
+                </tr>
+              ))}
+            </tbody>
+          </table>
+        </div>
       )}
     </div>
   );

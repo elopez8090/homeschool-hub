@@ -6,15 +6,12 @@ type SendEmailInput = {
 
 const ADMIN_INBOX = process.env.ADMIN_EMAIL || "admin@example.com";
 
-async function sendEmail({ to, subject, text }: SendEmailInput) {
-  const apiKey = process.env.SENDGRID_API_KEY;
-  const from = process.env.SENDGRID_FROM_EMAIL || "noreply@example.com";
+function siteUrl() {
+  return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
+}
 
-  if (!apiKey) {
-    console.warn(`[email] SENDGRID_API_KEY is not set. Skipped email to ${to}: ${subject}`);
-    return { sent: false, skipped: true };
-  }
-
+async function sendWithSendGrid({ to, subject, text }: SendEmailInput, apiKey: string) {
+  const from = process.env.SENDGRID_FROM_EMAIL || process.env.MAILCHIMP_FROM_EMAIL || "noreply@example.com";
   const response = await fetch("https://api.sendgrid.com/v3/mail/send", {
     method: "POST",
     headers: {
@@ -38,6 +35,47 @@ async function sendEmail({ to, subject, text }: SendEmailInput) {
   return { sent: true, skipped: false };
 }
 
+async function sendWithMailchimp({ to, subject, text }: SendEmailInput, apiKey: string) {
+  const from = process.env.MAILCHIMP_FROM_EMAIL || process.env.SENDGRID_FROM_EMAIL || "noreply@example.com";
+  const response = await fetch("https://mandrillapp.com/api/1.0/messages/send.json", {
+    method: "POST",
+    headers: { "Content-Type": "application/json" },
+    body: JSON.stringify({
+      key: apiKey,
+      message: {
+        from_email: from,
+        to: [{ email: to, type: "to" }],
+        subject,
+        text,
+      },
+    }),
+  });
+
+  if (!response.ok) {
+    const details = await response.text();
+    console.error("[email] Mailchimp error", response.status, details);
+    return { sent: false, skipped: false, error: details };
+  }
+
+  return { sent: true, skipped: false };
+}
+
+async function sendEmail({ to, subject, text }: SendEmailInput) {
+  const sendgridKey = process.env.SENDGRID_API_KEY;
+  const mailchimpKey = process.env.MAILCHIMP_API_KEY;
+
+  if (sendgridKey) {
+    return sendWithSendGrid({ to, subject, text }, sendgridKey);
+  }
+
+  if (mailchimpKey) {
+    return sendWithMailchimp({ to, subject, text }, mailchimpKey);
+  }
+
+  console.warn(`[email] No SENDGRID_API_KEY or MAILCHIMP_API_KEY set. Skipped email to ${to}: ${subject}`);
+  return { sent: false, skipped: true };
+}
+
 export async function emailAdminNewSubmission(details: {
   name: string;
   city: string;
@@ -48,24 +86,27 @@ export async function emailAdminNewSubmission(details: {
   description?: string | null;
   accepts_esa?: boolean | null;
 }) {
+  const dashboardUrl = `${siteUrl()}/admin/dashboard`;
+
   return sendEmail({
     to: ADMIN_INBOX,
     subject: `New program submission: ${details.name}`,
     text: [
-      "A new program was submitted to Christian Homeschools Hub.",
+      "A new program was submitted for review.",
       "",
-      `Program: ${details.name}`,
+      `Program name: ${details.name}`,
       `City: ${details.city}`,
       `State: ${details.state}`,
       `Category: ${details.category}`,
-      `Contact: ${details.contact_email}`,
+      `Contact email: ${details.contact_email}`,
       `Website: ${details.website || "Not provided"}`,
       `Accepts ESA funds: ${details.accepts_esa ? "Yes" : "No"}`,
       "",
       "Description:",
       details.description || "Not provided",
       "",
-      "Review it in the admin dashboard.",
+      "Approve or reject this submission in the admin dashboard:",
+      dashboardUrl,
     ].join("\n"),
   });
 }
@@ -77,10 +118,12 @@ export async function emailOwnerApproved(details: {
 }) {
   return sendEmail({
     to: details.contact_email,
-    subject: `${details.name} is now live`,
+    subject: "Your program has been approved!",
     text: [
-      `Good news — ${details.name} has been approved and is now listed on Christian Homeschools Hub.`,
-      details.listingUrl ? `\nView your listing:\n${details.listingUrl}` : "",
+      `Congratulations! ${details.name} has been approved.`,
+      details.listingUrl
+        ? `It's now live at ${details.listingUrl}`
+        : "It's now live in the directory.",
       "",
       "Thank you for serving families in your community.",
     ].join("\n"),
@@ -93,12 +136,10 @@ export async function emailOwnerRejected(details: {
 }) {
   return sendEmail({
     to: details.contact_email,
-    subject: `Update on your ${details.name} submission`,
+    subject: "Your submission status",
     text: [
-      `Thank you for submitting ${details.name} to Christian Homeschools Hub.`,
-      "",
-      "After review, we were not able to publish this listing at this time.",
-      "You are welcome to submit again with updated details.",
+      `Your submission for ${details.name} was not approved.`,
+      "Contact us for details.",
     ].join("\n"),
   });
 }

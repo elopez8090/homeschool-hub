@@ -19,7 +19,7 @@ export default function SubmitPage({ params }: SubmitPageProps) {
           ← Back to {stateName}
         </Link>
         <h1 className="mt-3 text-3xl font-semibold text-blue-900">
-          Submit a program
+          Submit Your Program
         </h1>
         <p className="mt-2 text-slate-600">
           Share a Christ-centered homeschool program in {stateName}. Listings
