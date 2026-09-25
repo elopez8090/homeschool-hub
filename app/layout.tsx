@@ -1,5 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
+import Image from "next/image";
 import Link from "next/link";
 import "./globals.css";
 
@@ -33,9 +34,19 @@ export default function RootLayout({
       >
         <div className="flex min-h-screen flex-col font-[family-name:var(--font-geist-sans)]">
           <header className="border-b border-blue-900/20 bg-blue-800 text-white">
-            <div className="mx-auto flex max-w-6xl items-center justify-between px-4 py-4 sm:px-6">
-              <Link href="/" className="text-lg font-semibold tracking-tight">
-                Christian Homeschools Hub
+            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
+              <Link
+                href="/"
+                className="inline-flex shrink-0 items-center opacity-100 transition-opacity hover:opacity-80"
+              >
+                <Image
+                  src="/christianhs_logo1.png"
+                  alt="Christian Homeschools Hub"
+                  width={512}
+                  height={140}
+                  className="h-[60px] w-auto"
+                  priority
+                />
               </Link>
               <nav className="text-sm text-blue-100">
                 <Link href="/" className="hover:text-white">

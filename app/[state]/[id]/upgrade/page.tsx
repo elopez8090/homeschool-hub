@@ -55,8 +55,8 @@ export default async function UpgradePage({ params }: UpgradePageProps) {
 
       <UpgradePlans
         program={program}
-        featuredActive={isFeaturedActive(program)}
-        esaActive={isEsaActive(program)}
+        featuredActive={program.featured === true}
+        esaActive={program.esa_verified === true}
       />
     </div>
   );

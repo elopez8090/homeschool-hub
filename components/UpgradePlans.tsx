@@ -63,35 +63,45 @@ export default function UpgradePlans({
         </p>
       ) : null}
 
-      <div className="grid gap-6 md:grid-cols-2">
-        <PricingCard
-          plan={UPGRADE_PLANS.featured}
-          active={featuredActive}
-          busy={busy === "featured"}
-          disabled={Boolean(busy)}
-          onStart={() => startCheckout("featured")}
-        />
-        <PricingCard
-          plan={UPGRADE_PLANS.esa}
-          active={esaActive}
-          busy={busy === "esa"}
-          disabled={Boolean(busy)}
-          onStart={() => startCheckout("esa")}
-        />
-      </div>
+      {featuredActive && esaActive ? (
+        <p className="rounded-xl border border-emerald-200 bg-emerald-50 px-4 py-3 text-sm font-medium text-emerald-800">
+          All upgrades active
+        </p>
+      ) : (
+        <div
+          className={`grid gap-6 ${
+            !featuredActive && !esaActive ? "md:grid-cols-2" : ""
+          }`}
+        >
+          {featuredActive === false && (
+            <PricingCard
+              plan={UPGRADE_PLANS.featured}
+              busy={busy === "featured"}
+              disabled={Boolean(busy)}
+              onStart={() => startCheckout("featured")}
+            />
+          )}
+          {esaActive === false && (
+            <PricingCard
+              plan={UPGRADE_PLANS.esa}
+              busy={busy === "esa"}
+              disabled={Boolean(busy)}
+              onStart={() => startCheckout("esa")}
+            />
+          )}
+        </div>
+      )}
     </div>
   );
 }
 
 function PricingCard({
   plan,
-  active,
   busy,
   disabled,
   onStart,
 }: {
   plan: (typeof UPGRADE_PLANS)[UpgradeType];
-  active: boolean;
   busy: boolean;
   disabled: boolean;
   onStart: () => void;
@@ -121,25 +131,19 @@ function PricingCard({
           </li>
         ))}
       </ul>
-      {active ? (
-        <p className="mt-6 rounded-lg bg-emerald-50 px-4 py-3 text-center text-sm font-medium text-emerald-800">
-          Already active on this listing
-        </p>
-      ) : (
-        <button
-          type="button"
-          onClick={onStart}
-          disabled={disabled}
-          suppressHydrationWarning
-          className={`mt-6 inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold text-white ${
-            featured
-              ? "bg-emerald-700 hover:bg-emerald-800"
-              : "bg-blue-700 hover:bg-blue-800"
-          } disabled:cursor-not-allowed disabled:opacity-60`}
-        >
-          {busy ? "Redirecting to Stripe..." : `Get Started — ${plan.priceLabel}`}
-        </button>
-      )}
+      <button
+        type="button"
+        onClick={onStart}
+        disabled={disabled}
+        suppressHydrationWarning
+        className={`mt-6 inline-flex items-center justify-center rounded-lg px-4 py-3 text-sm font-semibold text-white ${
+          featured
+            ? "bg-emerald-700 hover:bg-emerald-800"
+            : "bg-blue-700 hover:bg-blue-800"
+        } disabled:cursor-not-allowed disabled:opacity-60`}
+      >
+        {busy ? "Redirecting to Stripe..." : `Get Started — ${plan.priceLabel}`}
+      </button>
     </article>
   );
 }

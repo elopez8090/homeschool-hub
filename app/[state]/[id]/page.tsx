@@ -100,34 +100,38 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
         </a>
       </section>
 
-      {!isFeaturedActive(program) || !isEsaActive(program) ? (
-        <section className="rounded-xl border border-amber-200 bg-amber-50/70 px-6 py-6">
-          <h2 className="text-lg font-semibold text-blue-900">
-            Program owner upgrades
-          </h2>
-          <p className="mt-1 text-sm text-slate-600">
-            Increase visibility with a monthly featured listing or ESA badge.
-          </p>
+      <section className="rounded-xl border border-amber-200 bg-amber-50/70 px-6 py-6">
+        <h2 className="text-lg font-semibold text-blue-900">
+          Program owner upgrades
+        </h2>
+        <p className="mt-1 text-sm text-slate-600">
+          Increase visibility with a monthly featured listing or ESA badge.
+        </p>
+        {program.featured === false || program.esa_verified === false ? (
           <div className="mt-4 flex flex-wrap gap-3">
-            {!isFeaturedActive(program) ? (
+            {program.featured === false && (
               <Link
                 href={`/${params.state}/${params.id}/upgrade`}
                 className="inline-flex rounded-lg bg-emerald-700 px-4 py-2 text-sm font-semibold text-white hover:bg-emerald-800"
               >
                 Upgrade to Featured · {UPGRADE_PLANS.featured.priceLabel}
               </Link>
-            ) : null}
-            {!isEsaActive(program) ? (
+            )}
+            {program.esa_verified === false && (
               <Link
                 href={`/${params.state}/${params.id}/upgrade`}
                 className="inline-flex rounded-lg bg-blue-700 px-4 py-2 text-sm font-semibold text-white hover:bg-blue-800"
               >
                 Get ESA Badge · {UPGRADE_PLANS.esa.priceLabel}
               </Link>
-            ) : null}
+            )}
           </div>
-        </section>
-      ) : null}
+        ) : (
+          <p className="mt-4 text-sm font-medium text-emerald-800">
+            All upgrades active
+          </p>
+        )}
+      </section>
     </div>
   );
 }
