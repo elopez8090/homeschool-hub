@@ -3,7 +3,7 @@
 
 import { useAdminAuth } from "@/hooks/useAdminAuth";
 import { useRouter, usePathname } from "next/navigation";
-import { useEffect, useState } from "react";
+import { useEffect } from "react";
 
 export default function AdminLayout({
   children,
@@ -13,7 +13,6 @@ export default function AdminLayout({
   const { authenticated, loading } = useAdminAuth();
   const router = useRouter();
   const pathname = usePathname();
-  const [isReady, setIsReady] = useState(false);
 
   useEffect(() => {
     if (loading) return;
@@ -21,8 +20,6 @@ export default function AdminLayout({
     // If not authenticated and not on login page, redirect
     if (!authenticated && !pathname.includes("/login")) {
       router.push("/admin/login");
-    } else {
-      setIsReady(true);
     }
   }, [authenticated, loading, pathname, router]);
 

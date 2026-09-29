@@ -1,7 +1,7 @@
 ﻿// app/admin/programs/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 interface Program {
@@ -24,11 +24,7 @@ export default function ProgramsManagement() {
   const [searchTerm, setSearchTerm] = useState("");
   const [availableStates, setAvailableStates] = useState<string[]>([]);
 
-  useEffect(() => {
-    fetchPrograms();
-  }, [selectedState, searchTerm]);
-
-  const fetchPrograms = async () => {
+  const fetchPrograms = useCallback(async () => {
     try {
       setLoading(true);
       const query = new URLSearchParams();
@@ -51,7 +47,11 @@ export default function ProgramsManagement() {
     } finally {
       setLoading(false);
     }
-  };
+  }, [selectedState, searchTerm]);
+
+  useEffect(() => {
+    fetchPrograms();
+  }, [fetchPrograms]);
 
   const handleDelete = async (id: string, name: string) => {
     if (!confirm(`Are you sure you want to delete "${name}"?`)) return;

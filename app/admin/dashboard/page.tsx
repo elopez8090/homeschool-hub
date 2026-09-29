@@ -33,7 +33,7 @@ export default function AdminDashboard() {
         const programs = data.programs || [];
         setStats({
           totalPrograms: programs.length,
-          featuredPrograms: programs.filter((p: any) => p.featured).length,
+          featuredPrograms: programs.filter((p: { featured: boolean }) => p.featured).length,
           pendingSubmissions: 0, // Coming soon
         });
       }

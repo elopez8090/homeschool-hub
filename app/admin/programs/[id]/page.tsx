@@ -1,7 +1,7 @@
 // app/admin/programs/[id]/page.tsx
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 
 interface Program {
@@ -61,13 +61,7 @@ export default function ProgramForm({ params }: { params: { id: string } }) {
     featured: false,
   });
 
-  useEffect(() => {
-    if (!isNew) {
-      fetchProgram();
-    }
-  }, [isNew]);
-
-  const fetchProgram = async () => {
+  const fetchProgram = useCallback(async () => {
     try {
       const response = await fetch(`/api/admin/programs/${params.id}`);
       if (!response.ok) throw new Error("Failed to fetch program");
@@ -79,7 +73,13 @@ export default function ProgramForm({ params }: { params: { id: string } }) {
     } finally {
       setLoading(false);
     }
-  };
+  }, [params.id]);
+
+  useEffect(() => {
+    if (!isNew) {
+      fetchProgram();
+    }
+  }, [isNew, fetchProgram]);
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
