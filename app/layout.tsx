@@ -59,9 +59,16 @@ export default function RootLayout({
             {children}
           </main>
           <footer className="border-t border-navy/10 bg-white/50">
-            <div className="mx-auto max-w-6xl px-4 py-6 text-sm text-navy/70 sm:px-6">
-              Christian Homeschools Hub — a directory for families seeking
-              Christ-centered homeschool programs.
+            <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-navy/70 sm:flex-row sm:items-center sm:justify-between sm:px-6">
+              <p>
+                Christian Homeschools Hub — a directory for families seeking
+                Christ-centered homeschool programs.
+              </p>
+              <nav className="flex shrink-0 items-center gap-4">
+                <Link href="/admin/programs" className="hover:text-navy">
+                  Admin
+                </Link>
+              </nav>
             </div>
           </footer>
         </div>
