@@ -1,4 +1,6 @@
-﻿// app/api/admin/verify/route.ts
+﻿export const dynamic = 'force-dynamic';
+
+// app/api/admin/verify/route.ts
 import { createClient } from "@supabase/supabase-js";
 import { NextRequest, NextResponse } from "next/server";
 import crypto from "crypto";
