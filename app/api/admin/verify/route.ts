@@ -17,8 +17,10 @@ function hashPassword(password: string): string {
 export async function GET(request: NextRequest) {
   try {
     const token = request.cookies.get("admin_token")?.value;
+    console.log("Token from cookie:", token);
 
     if (!token) {
+      console.log("No token found in cookie");
       return NextResponse.json(
         { authenticated: false },
         { status: 401 }
@@ -26,6 +28,7 @@ export async function GET(request: NextRequest) {
     }
 
     const tokenHash = hashPassword(token);
+    console.log("Token hash:", tokenHash);
 
     // Find valid session
     const { data: session, error: sessionError } = await supabase
@@ -34,7 +37,11 @@ export async function GET(request: NextRequest) {
       .eq("token_hash", tokenHash)
       .single();
 
+    console.log("Session error:", sessionError);
+    console.log("Session data:", session);
+
     if (sessionError || !session) {
+      console.log("No session found or error occurred");
       return NextResponse.json(
         { authenticated: false },
         { status: 401 }
