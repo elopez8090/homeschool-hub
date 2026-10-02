@@ -1,5 +1,7 @@
 import Link from "next/link";
 import { notFound } from "next/navigation";
+import ClaimProgramModal from "@/components/ClaimProgramModal";
+import OwnerBadge from "@/components/OwnerBadge";
 import { EsaBadge, FeaturedBadge } from "@/components/ProgramBadges";
 import { fetchProgramById } from "@/lib/programs";
 import { formatStateSlug, getStateBySlug } from "@/lib/states";
@@ -48,6 +50,7 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
           ← Back to {stateName}
         </Link>
         <div className="mt-4 flex flex-wrap gap-2">
+          {program.owner_verified ? <OwnerBadge /> : null}
           {isFeaturedActive(program) ? <FeaturedBadge /> : null}
           {isEsaActive(program) ? <EsaBadge /> : null}
         </div>
@@ -72,6 +75,18 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
               {program.contact_email}
             </dd>
           </div>
+          {program.phone ? (
+            <div>
+              <dt className="text-xs uppercase tracking-wide text-slate-500">
+                Phone
+              </dt>
+              <dd className="mt-1 font-medium text-blue-900">
+                <a href={`tel:${program.phone}`} className="text-blue-700 hover:underline">
+                  {program.phone}
+                </a>
+              </dd>
+            </div>
+          ) : null}
           <div>
             <dt className="text-xs uppercase tracking-wide text-slate-500">
               Website
@@ -98,6 +113,26 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
         >
           Contact program
         </a>
+      </section>
+
+      <section className="rounded-xl border border-blue-100 bg-white px-6 py-6 shadow-sm">
+        <h2 className="text-lg font-semibold text-blue-900">Program owner</h2>
+        {program.owner_verified ? (
+          <p className="mt-2 text-sm text-slate-600">
+            This listing is verified by its owner.{" "}
+            <Link href="/owner/login" className="font-medium text-blue-700 hover:text-blue-900">
+              Sign in to edit
+            </Link>
+          </p>
+        ) : (
+          <div className="mt-2 space-y-4">
+            <p className="text-sm text-slate-600">
+              Claim this listing with the contact email on file. You&apos;ll get a verified badge
+              and can update the public details.
+            </p>
+            <ClaimProgramModal programId={String(program.id)} programName={program.name} />
+          </div>
+        )}
       </section>
 
       <section className="rounded-xl border border-amber-200 bg-amber-50/70 px-6 py-6">

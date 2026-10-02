@@ -1,4 +1,5 @@
 import Link from "next/link";
+import OwnerBadge from "@/components/OwnerBadge";
 import { EsaBadge, FeaturedBadge } from "@/components/ProgramBadges";
 import type { Program } from "@/lib/types";
 import { isEsaActive, isFeaturedActive } from "@/lib/upgrades";
@@ -19,6 +20,7 @@ export default function ProgramCard({
   return (
     <article className="flex h-full flex-col rounded-xl border border-blue-100 bg-white p-5 shadow-sm transition hover:border-blue-300 hover:shadow-md">
       <div className="flex flex-wrap gap-2">
+        {program.owner_verified ? <OwnerBadge /> : null}
         {isFeaturedActive(program) ? <FeaturedBadge /> : null}
         {isEsaActive(program) ? <EsaBadge /> : null}
       </div>

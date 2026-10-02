@@ -48,9 +48,12 @@ export default function RootLayout({
                   priority
                 />
               </Link>
-              <nav className="text-sm text-blue-100">
+              <nav className="flex items-center gap-4 text-sm text-blue-100">
                 <Link href="/" className="hover:text-white">
                   Browse states
+                </Link>
+                <Link href="/owner/programs" className="hover:text-white">
+                  My programs
                 </Link>
               </nav>
             </div>

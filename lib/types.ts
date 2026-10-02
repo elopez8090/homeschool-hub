@@ -8,9 +8,13 @@ export type Program = {
   category: string;
   description: string;
   contact_email: string;
+  phone?: string | null;
   website: string | null;
   featured: boolean;
   esa_verified: boolean;
+  claimed_by?: string | null;
+  claimed_at?: string | null;
+  owner_verified?: boolean;
   created_at: string;
   updated_at?: string | null;
   stripe_customer_id?: string | null;

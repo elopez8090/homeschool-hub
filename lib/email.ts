@@ -168,6 +168,47 @@ export async function emailOwnerUpgradeActivated(details: {
   });
 }
 
+export async function emailOwnerMagicLink(details: {
+  to: string;
+  token: string;
+  action: "signin" | "claim_program";
+  programName?: string;
+}) {
+  const verifyUrl = `${siteUrl()}/auth/verify?token=${encodeURIComponent(details.token)}`;
+  const claiming = details.action === "claim_program";
+  const programName = details.programName || "your program";
+
+  const result = await sendEmail({
+    to: details.to,
+    subject: claiming
+      ? `Claim ${programName} on Christian Homeschools Hub`
+      : "Sign in to Christian Homeschools Hub",
+    text: claiming
+      ? [
+          `Use the link below to claim ${programName} and sign in.`,
+          "The link expires in 24 hours and can only be used once.",
+          "",
+          verifyUrl,
+          "",
+          "If you did not request this, you can ignore this email.",
+        ].join("\n")
+      : [
+          "Use the link below to sign in to your program dashboard.",
+          "The link expires in 24 hours and can only be used once.",
+          "",
+          verifyUrl,
+          "",
+          "If you did not request this, you can ignore this email.",
+        ].join("\n"),
+  });
+
+  if (result.skipped) {
+    console.info(`[email] Magic link for ${details.to}: ${verifyUrl}`);
+  }
+
+  return result;
+}
+
 export async function emailOwnerUpgradeCanceled(details: {
   name: string;
   contact_email: string;
