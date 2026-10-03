@@ -27,16 +27,28 @@ export default function AdminDashboard() {
 
   const fetchStats = async () => {
     try {
-      const response = await fetch("/api/admin/programs");
-      if (response.ok) {
-        const data = await response.json();
+      const [programsResponse, submissionsResponse] = await Promise.all([
+        fetch("/api/admin/programs"),
+        fetch("/api/admin/submissions"),
+      ]);
+
+      let totalPrograms = 0;
+      let featuredPrograms = 0;
+      let pendingSubmissions = 0;
+
+      if (programsResponse.ok) {
+        const data = await programsResponse.json();
         const programs = data.programs || [];
-        setStats({
-          totalPrograms: programs.length,
-          featuredPrograms: programs.filter((p: { featured: boolean }) => p.featured).length,
-          pendingSubmissions: 0, // Coming soon
-        });
+        totalPrograms = programs.length;
+        featuredPrograms = programs.filter((p: { featured: boolean }) => p.featured).length;
       }
+
+      if (submissionsResponse.ok) {
+        const submissions = await submissionsResponse.json();
+        pendingSubmissions = Array.isArray(submissions) ? submissions.length : 0;
+      }
+
+      setStats({ totalPrograms, featuredPrograms, pendingSubmissions });
     } catch (error) {
       console.error("Failed to fetch stats:", error);
     } finally {
@@ -60,12 +72,20 @@ export default function AdminDashboard() {
               Welcome back, {admin?.name || "Admin"}
             </p>
           </div>
-          <button
-            onClick={() => setShowLogoutModal(true)}
-            className="text-red-600 hover:text-red-900 font-medium transition"
-          >
-            Logout
-          </button>
+          <div className="flex items-center gap-6">
+            <Link
+              href="/admin/submissions"
+              className="font-medium text-blue-600 transition hover:text-blue-900"
+            >
+              Submissions
+            </Link>
+            <button
+              onClick={() => setShowLogoutModal(true)}
+              className="text-red-600 hover:text-red-900 font-medium transition"
+            >
+              Logout
+            </button>
+          </div>
         </div>
       </div>
 
@@ -89,7 +109,10 @@ export default function AdminDashboard() {
             <p className="text-gray-500 text-xs mt-2">Premium listings</p>
           </div>
 
-          <div className="bg-white rounded-lg shadow p-6">
+          <Link
+            href="/admin/submissions"
+            className="bg-white rounded-lg shadow p-6 transition hover:shadow-md"
+          >
             <p className="text-gray-600 text-sm font-medium">
               Pending Submissions
             </p>
@@ -97,7 +120,7 @@ export default function AdminDashboard() {
               {loading ? "--" : stats.pendingSubmissions}
             </p>
             <p className="text-gray-500 text-xs mt-2">Awaiting approval</p>
-          </div>
+          </Link>
         </div>
 
         {/* Admin Features */}
@@ -138,12 +161,15 @@ export default function AdminDashboard() {
             </Link>
 
             {/* Pending Submissions */}
-            <div className="p-4 border border-gray-200 rounded-lg opacity-50">
+            <Link
+              href="/admin/submissions"
+              className="p-4 border border-gray-200 rounded-lg hover:border-green-400 hover:bg-green-50 transition cursor-pointer"
+            >
               <h3 className="font-semibold text-gray-900">Pending Submissions</h3>
               <p className="text-sm text-gray-600 mt-1">
-                Approve or reject program submissions
+                Approve or deny program submissions
               </p>
-            </div>
+            </Link>
 
             {/* Analytics */}
             <div className="p-4 border border-gray-200 rounded-lg opacity-50">

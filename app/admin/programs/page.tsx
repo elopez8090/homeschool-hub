@@ -115,12 +115,20 @@ export default function ProgramsManagement() {
                 Add, edit, and manage homeschool programs
               </p>
             </div>
-            <Link
-              href="/admin/programs/new"
-              className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition"
-            >
-              + Add Program
-            </Link>
+            <div className="flex items-center gap-4">
+              <Link
+                href="/admin/submissions"
+                className="font-medium text-blue-600 transition hover:text-blue-900"
+              >
+                Submissions
+              </Link>
+              <Link
+                href="/admin/programs/new"
+                className="bg-blue-600 hover:bg-blue-700 text-white font-medium py-2 px-6 rounded-lg transition"
+              >
+                + Add Program
+              </Link>
+            </div>
           </div>
         </div>
       </div>
