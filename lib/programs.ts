@@ -8,7 +8,7 @@ export async function fetchProgramsByState(
   const { data, error } = await client
     .from("programs")
     .select("*")
-    .eq("state", stateSlug.toLowerCase())
+    .eq("state", stateSlug.toUpperCase())
     .order("featured", { ascending: false })
     .order("name", { ascending: true });
 
