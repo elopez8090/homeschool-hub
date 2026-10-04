@@ -1,7 +1,6 @@
 import type { Metadata } from "next";
 import localFont from "next/font/local";
-import Image from "next/image";
-import Link from "next/link";
+import SiteShell from "@/components/SiteShell";
 import "./globals.css";
 
 const geistSans = localFont({
@@ -32,49 +31,7 @@ export default function RootLayout({
         className={`${geistSans.variable} ${geistMono.variable} min-h-screen bg-cream text-foreground antialiased`}
         suppressHydrationWarning
       >
-        <div className="flex min-h-screen flex-col font-[family-name:var(--font-geist-sans)]">
-          <header className="border-b border-blue-900/20 bg-blue-800 text-white">
-            <div className="mx-auto flex max-w-6xl items-center justify-between gap-4 px-4 py-3 sm:px-6">
-              <Link
-                href="/"
-                className="inline-flex shrink-0 items-center opacity-100 transition-opacity hover:opacity-80"
-              >
-                <Image
-                  src="/christianhs_logo1.png"
-                  alt="Christian Homeschools Hub"
-                  width={512}
-                  height={140}
-                  className="h-[60px] w-auto"
-                  priority
-                />
-              </Link>
-              <nav className="flex items-center gap-4 text-sm text-blue-100">
-                <Link href="/" className="hover:text-white">
-                  Browse states
-                </Link>
-                <Link href="/owner/programs" className="hover:text-white">
-                  My programs
-                </Link>
-              </nav>
-            </div>
-          </header>
-          <main className="mx-auto w-full max-w-6xl flex-1 px-4 py-10 sm:px-6">
-            {children}
-          </main>
-          <footer className="border-t border-navy/10 bg-white/50">
-            <div className="mx-auto flex max-w-6xl flex-col gap-3 px-4 py-6 text-sm text-navy/70 sm:flex-row sm:items-center sm:justify-between sm:px-6">
-              <p>
-                Christian Homeschools Hub — a directory for families seeking
-                Christ-centered homeschool programs.
-              </p>
-              <nav className="flex shrink-0 items-center gap-4">
-                <Link href="/admin/programs" className="hover:text-navy">
-                  Admin
-                </Link>
-              </nav>
-            </div>
-          </footer>
-        </div>
+        <SiteShell>{children}</SiteShell>
       </body>
     </html>
   );

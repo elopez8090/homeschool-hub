@@ -209,6 +209,30 @@ export async function emailOwnerMagicLink(details: {
   return result;
 }
 
+export async function emailContactInquiry(details: {
+  name: string;
+  email: string;
+  subject: string;
+  message: string;
+  category?: string | null;
+}) {
+  return sendEmail({
+    to: ADMIN_INBOX,
+    subject: `Contact form: ${details.subject}`,
+    text: [
+      "A new message was sent from the contact form.",
+      "",
+      `Name: ${details.name}`,
+      `Email: ${details.email}`,
+      `Category: ${details.category || "Not provided"}`,
+      `Subject: ${details.subject}`,
+      "",
+      "Message:",
+      details.message,
+    ].join("\n"),
+  });
+}
+
 export async function emailOwnerUpgradeCanceled(details: {
   name: string;
   contact_email: string;
