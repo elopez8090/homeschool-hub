@@ -1,4 +1,5 @@
-import { emailOwnerApproved, emailOwnerRejected } from "@/lib/email";
+import { programListingUrl } from "@/lib/emails/brand";
+import { sendApprovalNotification, sendDenialNotification } from "@/lib/email-service";
 import { getServerSupabase } from "@/lib/supabase-server";
 
 export async function approveSubmission(submissionId: string, origin: string) {
@@ -48,12 +49,19 @@ export async function approveSubmission(submissionId: string, origin: string) {
     return { error: deleteError.message, status: 500 as const };
   }
 
-  const listingUrl = `${origin}/${submission.state}`;
-  await emailOwnerApproved({
-    name: submission.name,
-    contact_email: submission.contact_email,
-    listingUrl,
-  });
+  const listingUrl = program?.id
+    ? programListingUrl(String(submission.state), program.id)
+    : `${origin}/${submission.state}`;
+  if (submission.contact_email) {
+    const emailResult = await sendApprovalNotification(
+      submission.contact_email,
+      submission.name,
+      listingUrl,
+    );
+    if (!emailResult.sent) {
+      console.warn("[email] Approval notification was not sent", emailResult);
+    }
+  }
 
   return { program, listingUrl };
 }
@@ -83,10 +91,16 @@ export async function rejectSubmission(submissionId: string) {
     return { error: deleteError.message, status: 500 as const };
   }
 
-  await emailOwnerRejected({
-    name: submission.name,
-    contact_email: submission.contact_email,
-  });
+  if (submission.contact_email) {
+    const emailResult = await sendDenialNotification(
+      submission.contact_email,
+      submission.name,
+      null,
+    );
+    if (!emailResult.sent) {
+      console.warn("[email] Denial notification was not sent", emailResult);
+    }
+  }
 
   return { ok: true as const };
 }

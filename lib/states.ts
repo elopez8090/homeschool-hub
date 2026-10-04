@@ -61,6 +61,29 @@ export function getStateBySlug(slug: string): USState | undefined {
   return US_STATES.find((state) => state.slug === slug.toLowerCase());
 }
 
+export function findState(value: string): USState | undefined {
+  const normalized = value.trim().toLowerCase();
+  if (!normalized) return undefined;
+
+  return US_STATES.find(
+    (state) =>
+      state.abbreviation.toLowerCase() === normalized ||
+      state.slug === normalized ||
+      state.name.toLowerCase() === normalized,
+  );
+}
+
+export function stateAbbreviation(value: string) {
+  const match = findState(value);
+  if (match) return match.abbreviation;
+  const compact = value.trim();
+  return compact.length <= 2 ? compact.toUpperCase() : compact.slice(0, 2).toUpperCase();
+}
+
+export function stateDisplayName(value: string) {
+  return findState(value)?.name ?? value.trim();
+}
+
 export function formatStateSlug(slug: string): string {
   const known = getStateBySlug(slug);
   if (known) return known.name;

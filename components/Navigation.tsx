@@ -12,6 +12,10 @@ const NAV_LINKS = [
   { href: "/contact", label: "Contact" },
 ] as const;
 
+// TODO - Hide this link once admin auth is implemented
+// Later we can add: {isAdmin && <NavLink href="/admin">Admin</NavLink>}
+const ADMIN_LINK = { href: "/admin/submissions", label: "Admin Panel" } as const;
+
 function isActive(pathname: string, href: string) {
   if (href === "/") return pathname === "/";
   return pathname === href || pathname.startsWith(`${href}/`);
@@ -99,6 +103,18 @@ export default function Navigation() {
               </Link>
             );
           })}
+          {/* TODO - Hide this link once admin auth is implemented */}
+          <Link
+            href={ADMIN_LINK.href}
+            aria-current={isActive(pathname, ADMIN_LINK.href) ? "page" : undefined}
+            className={`whitespace-nowrap border-b-2 py-1 text-xs font-medium transition-colors lg:text-sm ${
+              isActive(pathname, ADMIN_LINK.href)
+                ? "border-white text-white"
+                : "border-transparent text-white hover:text-gray-200"
+            }`}
+          >
+            {ADMIN_LINK.label}
+          </Link>
         </nav>
 
         <button
@@ -167,6 +183,22 @@ export default function Navigation() {
                 </Link>
               );
             })}
+            {/* TODO - Hide this link once admin auth is implemented */}
+            <div className="mt-2 border-t border-white/10 pt-2">
+              <Link
+                href={ADMIN_LINK.href}
+                onClick={close}
+                tabIndex={open ? undefined : -1}
+                aria-current={isActive(pathname, ADMIN_LINK.href) ? "page" : undefined}
+                className={`rounded-lg px-3 py-3 text-base font-medium transition-colors ${
+                  isActive(pathname, ADMIN_LINK.href)
+                    ? "bg-white/10 font-semibold text-white"
+                    : "text-white hover:bg-white/10 hover:text-gray-200"
+                }`}
+              >
+                {ADMIN_LINK.label}
+              </Link>
+            </div>
           </nav>
         </div>
       </div>

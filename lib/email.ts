@@ -1,14 +1,11 @@
+import { sendPlainEmail } from "@/lib/email-service";
+import { siteUrl } from "@/lib/emails/brand";
+
 type SendEmailInput = {
   to: string;
   subject: string;
   text: string;
 };
-
-const ADMIN_INBOX = process.env.ADMIN_EMAIL || "admin@example.com";
-
-function siteUrl() {
-  return process.env.NEXT_PUBLIC_SITE_URL || "http://localhost:3000";
-}
 
 async function sendWithSendGrid({ to, subject, text }: SendEmailInput, apiKey: string) {
   const from = process.env.SENDGRID_FROM_EMAIL || process.env.MAILCHIMP_FROM_EMAIL || "noreply@example.com";
@@ -61,6 +58,10 @@ async function sendWithMailchimp({ to, subject, text }: SendEmailInput, apiKey: 
 }
 
 async function sendEmail({ to, subject, text }: SendEmailInput) {
+  if (process.env.RESEND_API_KEY?.trim()) {
+    return sendPlainEmail({ to, subject, text });
+  }
+
   const sendgridKey = process.env.SENDGRID_API_KEY;
   const mailchimpKey = process.env.MAILCHIMP_API_KEY;
 
@@ -72,76 +73,8 @@ async function sendEmail({ to, subject, text }: SendEmailInput) {
     return sendWithMailchimp({ to, subject, text }, mailchimpKey);
   }
 
-  console.warn(`[email] No SENDGRID_API_KEY or MAILCHIMP_API_KEY set. Skipped email to ${to}: ${subject}`);
+  console.warn(`[email] No email provider is configured. Skipped email to ${to}: ${subject}`);
   return { sent: false, skipped: true };
-}
-
-export async function emailAdminNewSubmission(details: {
-  name: string;
-  city: string;
-  state: string;
-  category: string;
-  contact_email: string;
-  website?: string | null;
-  description?: string | null;
-  accepts_esa?: boolean | null;
-}) {
-  const dashboardUrl = `${siteUrl()}/admin/dashboard`;
-
-  return sendEmail({
-    to: ADMIN_INBOX,
-    subject: `New program submission: ${details.name}`,
-    text: [
-      "A new program was submitted for review.",
-      "",
-      `Program name: ${details.name}`,
-      `City: ${details.city}`,
-      `State: ${details.state}`,
-      `Category: ${details.category}`,
-      `Contact email: ${details.contact_email}`,
-      `Website: ${details.website || "Not provided"}`,
-      `Accepts ESA funds: ${details.accepts_esa ? "Yes" : "No"}`,
-      "",
-      "Description:",
-      details.description || "Not provided",
-      "",
-      "Approve or reject this submission in the admin dashboard:",
-      dashboardUrl,
-    ].join("\n"),
-  });
-}
-
-export async function emailOwnerApproved(details: {
-  name: string;
-  contact_email: string;
-  listingUrl?: string;
-}) {
-  return sendEmail({
-    to: details.contact_email,
-    subject: "Your program has been approved!",
-    text: [
-      `Congratulations! ${details.name} has been approved.`,
-      details.listingUrl
-        ? `It's now live at ${details.listingUrl}`
-        : "It's now live in the directory.",
-      "",
-      "Thank you for serving families in your community.",
-    ].join("\n"),
-  });
-}
-
-export async function emailOwnerRejected(details: {
-  name: string;
-  contact_email: string;
-}) {
-  return sendEmail({
-    to: details.contact_email,
-    subject: "Your submission status",
-    text: [
-      `Your submission for ${details.name} was not approved.`,
-      "Contact us for details.",
-    ].join("\n"),
-  });
 }
 
 export async function emailOwnerUpgradeActivated(details: {
@@ -207,30 +140,6 @@ export async function emailOwnerMagicLink(details: {
   }
 
   return result;
-}
-
-export async function emailContactInquiry(details: {
-  name: string;
-  email: string;
-  subject: string;
-  message: string;
-  category?: string | null;
-}) {
-  return sendEmail({
-    to: ADMIN_INBOX,
-    subject: `Contact form: ${details.subject}`,
-    text: [
-      "A new message was sent from the contact form.",
-      "",
-      `Name: ${details.name}`,
-      `Email: ${details.email}`,
-      `Category: ${details.category || "Not provided"}`,
-      `Subject: ${details.subject}`,
-      "",
-      "Message:",
-      details.message,
-    ].join("\n"),
-  });
 }
 
 export async function emailOwnerUpgradeCanceled(details: {

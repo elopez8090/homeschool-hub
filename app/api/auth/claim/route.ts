@@ -1,5 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
-import { emailOwnerMagicLink } from "@/lib/email";
+import { siteUrl } from "@/lib/emails/brand";
+import { sendClaimVerification } from "@/lib/email-service";
 import { createAuthToken, normalizeEmail } from "@/lib/owner-auth";
 import { getServerSupabase, hasServiceRoleKey } from "@/lib/supabase-server";
 
@@ -66,12 +67,16 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const sent = await emailOwnerMagicLink({
-      to: email,
-      token,
-      action: "claim_program",
-      programName: program.name,
-    });
+    const verificationLink = `${siteUrl()}/auth/verify?token=${encodeURIComponent(token)}`;
+    const sent = await sendClaimVerification(
+      email,
+      program.name || "your program",
+      verificationLink,
+    );
+
+    if (sent.skipped) {
+      console.info(`[email] Claim verification link for ${email}: ${verificationLink}`);
+    }
 
     if (!sent.sent && !sent.skipped) {
       return NextResponse.json(

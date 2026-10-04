@@ -45,7 +45,13 @@ export default function AdminDashboard() {
 
       if (submissionsResponse.ok) {
         const submissions = await submissionsResponse.json();
-        pendingSubmissions = Array.isArray(submissions) ? submissions.length : 0;
+        if (Array.isArray(submissions)) {
+          pendingSubmissions = submissions.length;
+        } else if (typeof submissions?.total === "number") {
+          pendingSubmissions = submissions.total;
+        } else if (Array.isArray(submissions?.submissions)) {
+          pendingSubmissions = submissions.submissions.length;
+        }
       }
 
       setStats({ totalPrograms, featuredPrograms, pendingSubmissions });

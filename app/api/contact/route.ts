@@ -1,5 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { emailContactInquiry } from "@/lib/email";
+import {
+  sendAdminContactNotification,
+  sendContactConfirmation,
+} from "@/lib/email-service";
 import { validateContact, type ContactInput } from "@/lib/validation";
 
 export async function POST(request: NextRequest) {
@@ -25,12 +28,22 @@ export async function POST(request: NextRequest) {
   console.info("[contact] New message", data);
 
   try {
-    const result = await emailContactInquiry(data);
+    const [confirmation, adminNotice] = await Promise.all([
+      sendContactConfirmation(data.email, data.subject),
+      sendAdminContactNotification({
+        name: data.name,
+        email: data.email,
+        subject: data.subject,
+        message: data.message,
+        category: data.category,
+      }),
+    ]);
 
-    if (result.skipped || !result.sent) {
-      console.warn(
-        "[contact] Notification email was not sent. The message was logged and accepted.",
-      );
+    if (!confirmation.sent) {
+      console.warn("[contact] Confirmation email was not sent", confirmation);
+    }
+    if (!adminNotice.sent) {
+      console.warn("[contact] Admin notification was not sent", adminNotice);
     }
   } catch (error) {
     console.error("[contact] Failed to send notification", error);

@@ -1,5 +1,5 @@
 import { NextRequest, NextResponse } from "next/server";
-import { emailAdminNewSubmission } from "@/lib/email";
+import { sendAdminNotification, sendSubmissionConfirmation } from "@/lib/email-service";
 import { getServerSupabase } from "@/lib/supabase-server";
 import { validateSubmission } from "@/lib/validation";
 
@@ -66,7 +66,26 @@ export async function POST(request: NextRequest) {
     );
   }
 
-  await emailAdminNewSubmission(data);
+  const emailResults = await Promise.allSettled([
+    sendSubmissionConfirmation(data.contact_email, data.name, data.category),
+    sendAdminNotification({
+      name: data.name,
+      city: data.city,
+      state: data.state,
+      category: data.category,
+      contactEmail: data.contact_email,
+      website: data.website,
+      description: data.description,
+    }),
+  ]);
+
+  for (const result of emailResults) {
+    if (result.status === "rejected") {
+      console.error("[email] Submission email failed", result.reason);
+    } else if (!result.value.sent) {
+      console.warn("[email] Submission email was not sent", result.value);
+    }
+  }
 
   return NextResponse.json({ success: true, submission }, { status: 201 });
 }
