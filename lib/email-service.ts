@@ -11,6 +11,7 @@ import ApprovalNotificationEmail from "@/lib/emails/approval-notification";
 import ClaimVerificationEmail from "@/lib/emails/claim-verification";
 import ContactConfirmationEmail from "@/lib/emails/contact-confirmation";
 import DenialNotificationEmail from "@/lib/emails/denial-notification";
+import ProgramUpdatedEmail from "@/lib/emails/program-updated";
 import SubmissionConfirmationEmail from "@/lib/emails/submission-confirmation";
 import { adminInbox, supportEmail } from "@/lib/emails/brand";
 
@@ -207,6 +208,21 @@ export async function sendDenialNotification(
     react: DenialNotificationEmail({ programName, reason }),
     replyTo: supportEmail(),
     logLabel: "denial notification",
+  });
+}
+
+export async function sendProgramUpdatedEmail(
+  email: string,
+  programName: string,
+  programUrl: string,
+  changes: Array<{ label: string; value: string }>,
+) {
+  return deliverEmail({
+    to: email,
+    subject: "Your program has been updated",
+    react: ProgramUpdatedEmail({ programName, programUrl, changes }),
+    replyTo: supportEmail(),
+    logLabel: "program update notification",
   });
 }
 

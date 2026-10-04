@@ -84,6 +84,12 @@ export function stateDisplayName(value: string) {
   return findState(value)?.name ?? value.trim();
 }
 
+export function programPath(state: string, id: string | number) {
+  const match = findState(state);
+  const slug = match?.slug || state.trim().toLowerCase().replace(/\s+/g, "-");
+  return `/${slug}/${id}`;
+}
+
 export function formatStateSlug(slug: string): string {
   const known = getStateBySlug(slug);
   if (known) return known.name;

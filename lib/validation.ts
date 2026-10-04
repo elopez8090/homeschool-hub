@@ -59,61 +59,6 @@ export function validateSubmission(body: Partial<SubmissionInput>) {
   };
 }
 
-const OWNER_DESCRIPTION_MAX = 2000;
-
-export type OwnerProgramUpdate = {
-  name: string;
-  city: string;
-  category: string;
-  description: string;
-  contact_email: string;
-  phone: string | null;
-  website: string | null;
-};
-
-export function validateOwnerProgramUpdate(body: Partial<OwnerProgramUpdate>) {
-  const errors: string[] = [];
-  const name = (body.name || "").trim();
-  const city = (body.city || "").trim();
-  const category = (body.category || "").trim();
-  const description = (body.description || "").trim();
-  const contact_email = (body.contact_email || "").trim().toLowerCase();
-  const phone = (body.phone || "").trim();
-  const website = (body.website || "").trim();
-
-  if (!name) errors.push("Program name is required.");
-  else if (name.length > 200) errors.push("Program name must be 200 characters or fewer.");
-  if (!city) errors.push("City is required.");
-  else if (city.length > 100) errors.push("City must be 100 characters or fewer.");
-  if (!category) errors.push("Category is required.");
-  else if (category.length > 80) errors.push("Category must be 80 characters or fewer.");
-  if (!description) errors.push("Description is required.");
-  else if (description.length > OWNER_DESCRIPTION_MAX) {
-    errors.push(`Description must be ${OWNER_DESCRIPTION_MAX} characters or fewer.`);
-  }
-  if (!contact_email) errors.push("Contact email is required.");
-  else if (!EMAIL_PATTERN.test(contact_email)) {
-    errors.push("Contact email is not valid.");
-  }
-  if (phone.length > 30) errors.push("Phone must be 30 characters or fewer.");
-  if (website && !/^https?:\/\//i.test(website)) {
-    errors.push("Website must start with http:// or https://.");
-  }
-
-  return {
-    errors,
-    data: {
-      name,
-      city,
-      category,
-      description,
-      contact_email,
-      phone: phone || null,
-      website: website || null,
-    } satisfies OwnerProgramUpdate,
-  };
-}
-
 export const CONTACT_CATEGORIES = [
   "General Inquiry",
   "Program Submission Issue",
@@ -342,5 +287,117 @@ export function validateProgramSubmission(body: Record<string, unknown>) {
       phone: phone || null,
       website: website || null,
     } satisfies ProgramSubmissionInput,
+  };
+}
+
+export const OWNER_DESCRIPTION_MAX = 500;
+
+const OWNER_CATEGORIES = new Set<string>([
+  ...PROGRAM_SUBMISSION_CATEGORIES,
+  ...PROGRAM_CATEGORIES,
+]);
+
+export type OwnerProgramFieldErrors = {
+  name?: string;
+  description?: string;
+  city?: string;
+  state?: string;
+  category?: string;
+  contact_email?: string;
+  phone?: string;
+  website?: string;
+};
+
+export type OwnerProgramUpdate = {
+  name: string;
+  description: string;
+  city: string;
+  state: string;
+  category: string;
+  contact_email: string;
+  phone: string | null;
+  website: string | null;
+};
+
+export function validateOwnerProgramUpdate(body: Record<string, unknown> | Partial<OwnerProgramUpdate>) {
+  const errors: string[] = [];
+  const fieldErrors: OwnerProgramFieldErrors = {};
+  const source = body as Record<string, unknown>;
+  const name = asTrimmedString(source.name);
+  const description = asTrimmedString(source.description);
+  const city = asTrimmedString(source.city);
+  const stateInput = asTrimmedString(source.state);
+  const category = asTrimmedString(source.category);
+  const contact_email = asTrimmedString(source.contact_email).toLowerCase();
+  const phone = asTrimmedString(source.phone);
+  const website = asTrimmedString(source.website);
+
+  if (!name) {
+    fieldErrors.name = "Program name is required.";
+  } else if (name.length > SUBMISSION_NAME_MAX) {
+    fieldErrors.name = `Program name must be ${SUBMISSION_NAME_MAX} characters or fewer.`;
+  }
+
+  if (!description) {
+    fieldErrors.description = "Description is required.";
+  } else if (description.length > OWNER_DESCRIPTION_MAX) {
+    fieldErrors.description = `Description must be ${OWNER_DESCRIPTION_MAX} characters or fewer.`;
+  }
+
+  if (!city) {
+    fieldErrors.city = "City is required.";
+  } else if (city.length > SUBMISSION_CITY_MAX) {
+    fieldErrors.city = `City must be ${SUBMISSION_CITY_MAX} characters or fewer.`;
+  }
+
+  const matchedState = US_STATES.find(
+    (item) =>
+      item.abbreviation.toLowerCase() === stateInput.toLowerCase() ||
+      item.name.toLowerCase() === stateInput.toLowerCase() ||
+      item.slug === stateInput.toLowerCase(),
+  );
+  if (!stateInput) {
+    fieldErrors.state = "State is required.";
+  } else if (!matchedState) {
+    fieldErrors.state = "Choose a U.S. state.";
+  }
+
+  if (!category) {
+    fieldErrors.category = "Category is required.";
+  } else if (!OWNER_CATEGORIES.has(category)) {
+    fieldErrors.category = "Choose a valid category.";
+  }
+
+  if (!contact_email) {
+    fieldErrors.contact_email = "Contact email is required.";
+  } else if (!EMAIL_PATTERN.test(contact_email)) {
+    fieldErrors.contact_email = "Enter a valid email address.";
+  }
+
+  if (phone && !PHONE_PATTERN.test(phone)) {
+    fieldErrors.phone = "Enter a phone number like (555) 123-4567.";
+  }
+
+  if (website && !isValidWebsite(website)) {
+    fieldErrors.website = "Enter a full website address starting with https://.";
+  }
+
+  for (const messageText of Object.values(fieldErrors)) {
+    if (messageText) errors.push(messageText);
+  }
+
+  return {
+    errors,
+    fieldErrors,
+    data: {
+      name,
+      description,
+      city,
+      state: matchedState?.abbreviation ?? stateInput.toUpperCase(),
+      category,
+      contact_email,
+      phone: phone || null,
+      website: website || null,
+    } satisfies OwnerProgramUpdate,
   };
 }

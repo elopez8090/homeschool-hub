@@ -40,12 +40,37 @@ function CloseIcon() {
   );
 }
 
+const OWNER_LINK = { href: "/owner/dashboard", label: "My Programs" } as const;
+
+function isOwnerLinkActive(pathname: string) {
+  return pathname === "/owner/dashboard" || pathname.startsWith("/owner/programs");
+}
+
 export default function Navigation() {
   const pathname = usePathname();
   const [open, setOpen] = useState(false);
+  const [ownerSignedIn, setOwnerSignedIn] = useState(false);
 
   useEffect(() => {
     setOpen(false);
+  }, [pathname]);
+
+  useEffect(() => {
+    let cancelled = false;
+
+    async function loadSession() {
+      try {
+        const response = await fetch("/api/owner/session");
+        if (!cancelled) setOwnerSignedIn(response.ok);
+      } catch {
+        if (!cancelled) setOwnerSignedIn(false);
+      }
+    }
+
+    loadSession();
+    return () => {
+      cancelled = true;
+    };
   }, [pathname]);
 
   useEffect(() => {
@@ -103,6 +128,19 @@ export default function Navigation() {
               </Link>
             );
           })}
+          {ownerSignedIn ? (
+            <Link
+              href={OWNER_LINK.href}
+              aria-current={isOwnerLinkActive(pathname) ? "page" : undefined}
+              className={`whitespace-nowrap border-b-2 py-1 text-xs font-medium transition-colors lg:text-sm ${
+                isOwnerLinkActive(pathname)
+                  ? "border-white text-white"
+                  : "border-transparent text-white hover:text-gray-200"
+              }`}
+            >
+              {OWNER_LINK.label}
+            </Link>
+          ) : null}
           {/* TODO - Hide this link once admin auth is implemented */}
           <Link
             href={ADMIN_LINK.href}
@@ -183,6 +221,21 @@ export default function Navigation() {
                 </Link>
               );
             })}
+            {ownerSignedIn ? (
+              <Link
+                href={OWNER_LINK.href}
+                onClick={close}
+                tabIndex={open ? undefined : -1}
+                aria-current={isOwnerLinkActive(pathname) ? "page" : undefined}
+                className={`rounded-lg px-3 py-3 text-base font-medium transition-colors ${
+                  isOwnerLinkActive(pathname)
+                    ? "bg-white/10 font-semibold text-white"
+                    : "text-white hover:bg-white/10 hover:text-gray-200"
+                }`}
+              >
+                {OWNER_LINK.label}
+              </Link>
+            ) : null}
             {/* TODO - Hide this link once admin auth is implemented */}
             <div className="mt-2 border-t border-white/10 pt-2">
               <Link

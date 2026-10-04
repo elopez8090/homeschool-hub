@@ -1,12 +1,14 @@
-import { Suspense } from "react";
-import OwnerDashboard from "@/components/OwnerDashboard";
+import { redirect } from "next/navigation";
 
-export const dynamic = "force-dynamic";
-
-export default function OwnerProgramsPage() {
-  return (
-    <Suspense fallback={<p className="text-sm text-slate-600">Loading your programs...</p>}>
-      <OwnerDashboard />
-    </Suspense>
-  );
+export default function OwnerProgramsPage({
+  searchParams,
+}: {
+  searchParams: Record<string, string | string[] | undefined>;
+}) {
+  const params = new URLSearchParams();
+  for (const [key, value] of Object.entries(searchParams)) {
+    if (typeof value === "string") params.set(key, value);
+  }
+  const query = params.toString();
+  redirect(query ? `/owner/dashboard?${query}` : "/owner/dashboard");
 }

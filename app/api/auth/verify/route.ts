@@ -31,7 +31,7 @@ export async function GET(request: NextRequest) {
       return loginRedirect(request, "session_failed");
     }
 
-    let destination = "/owner/programs";
+    let destination = "/owner/dashboard";
 
     if (token.action === "claim_program") {
       const programId = Number(token.program_id);
@@ -46,7 +46,7 @@ export async function GET(request: NextRequest) {
       }
 
       if (status === "taken") {
-        destination = "/owner/programs?notice=taken";
+        destination = "/owner/dashboard?notice=taken";
       } else {
         destination = `/owner/programs/${programId}/edit?claimed=1`;
       }
