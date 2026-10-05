@@ -19,6 +19,28 @@ export async function fetchProgramsByState(
   return { programs: (data || []) as Program[], error: null };
 }
 
+export async function countPrograms(client: SupabaseClient) {
+  const { count, error } = await client
+    .from("programs")
+    .select("id", { count: "exact", head: true });
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
+export async function countProgramsByState(
+  client: SupabaseClient,
+  stateCode: string,
+) {
+  const { count, error } = await client
+    .from("programs")
+    .select("id", { count: "exact", head: true })
+    .eq("state", stateCode.toUpperCase());
+
+  if (error) return 0;
+  return count ?? 0;
+}
+
 export async function fetchProgramById(client: SupabaseClient, id: string) {
   const { data, error } = await client
     .from("programs")

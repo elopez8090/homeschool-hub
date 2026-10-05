@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
+import { generateMetadata, pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "About Christian Homeschools Hub",
-  description:
-    "Christian Homeschools Hub is a free directory that helps families find Christ-centered homeschool programs by location, with owner verification badges.",
-};
+export const metadata = generateMetadata(pageMetadata.about);
 
 export default function AboutLayout({ children }: { children: React.ReactNode }) {
   return children;

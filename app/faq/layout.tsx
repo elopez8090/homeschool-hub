@@ -1,11 +1,15 @@
-import type { Metadata } from "next";
+import JsonLd from "@/components/JsonLd";
+import { faqEntries } from "@/lib/faq";
+import { generateFAQSchema } from "@/lib/schema";
+import { generateMetadata, pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "FAQ — Christian Homeschools Hub",
-  description:
-    "Answers about browsing Christian Homeschools Hub, claiming a program, verification, and submitting a new listing.",
-};
+export const metadata = generateMetadata(pageMetadata.faq);
 
 export default function FaqLayout({ children }: { children: React.ReactNode }) {
-  return children;
+  return (
+    <>
+      <JsonLd data={generateFAQSchema(faqEntries())} />
+      {children}
+    </>
+  );
 }

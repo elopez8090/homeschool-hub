@@ -1,10 +1,14 @@
+import type { Metadata } from "next";
 import Link from "next/link";
 import { notFound } from "next/navigation";
 import ClaimProgramModal from "@/components/ClaimProgramModal";
+import JsonLd from "@/components/JsonLd";
 import OwnerBadge from "@/components/OwnerBadge";
 import { EsaBadge, FeaturedBadge } from "@/components/ProgramBadges";
 import { fetchProgramById } from "@/lib/programs";
-import { formatStateSlug, getStateBySlug } from "@/lib/states";
+import { generateBreadcrumbSchema, generateProgramSchema } from "@/lib/schema";
+import { absoluteUrl, generateMetadata as buildMetadata } from "@/lib/seo";
+import { findState, formatStateSlug, getStateBySlug, programPath } from "@/lib/states";
 import { getServerSupabase } from "@/lib/supabase-server";
 import { isEsaActive, isFeaturedActive, UPGRADE_PLANS } from "@/lib/upgrades";
 
@@ -13,6 +17,41 @@ export const dynamic = "force-dynamic";
 type ProgramPageProps = {
   params: { state: string; id: string };
 };
+
+function summarize(text: string) {
+  const clean = text.replace(/\s+/g, " ").trim();
+  if (clean.length <= 160) return clean;
+  return `${clean.slice(0, 159).trimEnd()}…`;
+}
+
+export async function generateMetadata({
+  params,
+}: ProgramPageProps): Promise<Metadata> {
+  const { program } = await fetchProgramById(getServerSupabase(), params.id);
+  const stateName = formatStateSlug(params.state);
+
+  if (!program) {
+    return buildMetadata({
+      title: "Program not found",
+      description: "This program listing could not be found.",
+      path: `/${params.state}/${params.id}`,
+    });
+  }
+
+  return buildMetadata({
+    title: program.name,
+    description: summarize(program.description || `${program.name} in ${stateName}.`),
+    path: programPath(program.state, program.id),
+    keywords: [
+      program.name,
+      program.city,
+      stateName,
+      program.category,
+      "Christian homeschool",
+      "ESA eligibility",
+    ],
+  });
+}
 
 export default async function ProgramPage({ params }: ProgramPageProps) {
   const { program, error } = await fetchProgramById(
@@ -40,7 +79,20 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
       : `https://${program.website}`
     : null;
 
+  const stateMatch = findState(params.state);
+  const crumbPath = `/${stateMatch?.slug ?? params.state}`;
+
   return (
+    <>
+    <JsonLd data={generateProgramSchema(program)} />
+    <JsonLd
+      data={generateBreadcrumbSchema([
+        { name: "Home", url: absoluteUrl("/") },
+        { name: "States", url: absoluteUrl("/") },
+        { name: stateName, url: absoluteUrl(crumbPath) },
+        { name: program.name, url: absoluteUrl(programPath(program.state, program.id)) },
+      ])}
+    />
     <div className="space-y-8">
       <div>
         <Link
@@ -168,5 +220,6 @@ export default async function ProgramPage({ params }: ProgramPageProps) {
         )}
       </section>
     </div>
+    </>
   );
 }

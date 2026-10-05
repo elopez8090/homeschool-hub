@@ -1,10 +1,6 @@
-import type { Metadata } from "next";
+import { generateMetadata, pageMetadata } from "@/lib/seo";
 
-export const metadata: Metadata = {
-  title: "Submit Your Program — Christian Homeschools Hub",
-  description:
-    "Add your homeschool program to the free Christian Homeschools Hub directory. Listings are reviewed before they are published.",
-};
+export const metadata = generateMetadata(pageMetadata.submit);
 
 export default function SubmitLayout({ children }: { children: React.ReactNode }) {
   return children;
