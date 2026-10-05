@@ -14,7 +14,7 @@ export const siteConfig = {
   description:
     "Find Christ-centered homeschool programs, co-ops, and resources by state. Browse owner-verified listings and ESA eligibility in one directory.",
   url: siteUrl,
-  image: `${siteUrl}/opengraph-image`,
+  image: `${siteUrl}/opengraph-image.png`,
   twitterHandle: "@christianhomeschoolshub",
   email: process.env.SUPPORT_EMAIL || "support@christianhomeschoolshub.com",
   themeColor: "#1e3a8a",
