@@ -1,5 +1,16 @@
 import { US_STATES } from "@/lib/states";
-import { PROGRAM_CATEGORIES } from "@/lib/types";
+import {
+  GRADE_LEVELS,
+  PROGRAM_CATEGORIES,
+  PROGRAM_FORMATS,
+  PROGRAM_TYPES,
+  SOCIAL_MEDIA_KEYS,
+  type GradeLevel,
+  type ProgramFormat,
+  type ProgramType,
+  type SocialMediaKey,
+  type SocialMediaLinks,
+} from "@/lib/types";
 
 const EMAIL_PATTERN = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 const DESCRIPTION_MAX = 1000;
@@ -306,6 +317,14 @@ export type OwnerProgramFieldErrors = {
   contact_email?: string;
   phone?: string;
   website?: string;
+  grades_served?: string;
+  program_format?: string;
+  program_type?: string;
+  social_media?: string;
+  facebook?: string;
+  instagram?: string;
+  youtube?: string;
+  twitter?: string;
 };
 
 export type OwnerProgramUpdate = {
@@ -317,7 +336,125 @@ export type OwnerProgramUpdate = {
   contact_email: string;
   phone: string | null;
   website: string | null;
+  grades_served: GradeLevel[];
+  program_format: ProgramFormat[];
+  program_type: ProgramType | null;
+  social_media: SocialMediaLinks;
 };
+
+const GRADE_LOOKUP = new Map(GRADE_LEVELS.map((grade) => [grade.toLowerCase(), grade]));
+const FORMAT_LOOKUP = new Map(PROGRAM_FORMATS.map((format) => [format.toLowerCase(), format]));
+const TYPE_LOOKUP = new Map(PROGRAM_TYPES.map((type) => [type.toLowerCase(), type]));
+
+const EMPTY_SOCIAL_MEDIA: SocialMediaLinks = {
+  facebook: null,
+  instagram: null,
+  youtube: null,
+  twitter: null,
+};
+
+function lookupChoice<T extends string>(value: unknown, lookup: Map<string, T>) {
+  if (typeof value !== "string") return null;
+  return lookup.get(value.trim().toLowerCase()) ?? null;
+}
+
+function parseChoiceList<T extends string>(
+  value: unknown,
+  lookup: Map<string, T>,
+  order: readonly T[],
+) {
+  if (value == null || value === "") {
+    return { values: [] as T[], invalid: false, malformed: false };
+  }
+  if (!Array.isArray(value)) {
+    return { values: [] as T[], invalid: false, malformed: true };
+  }
+
+  const picked = new Set<T>();
+  let invalid = false;
+  for (const item of value) {
+    if (typeof item === "string" && !item.trim()) continue;
+    const match = lookupChoice(item, lookup);
+    if (!match) {
+      invalid = true;
+      continue;
+    }
+    picked.add(match);
+  }
+
+  return {
+    values: order.filter((item) => picked.has(item)),
+    invalid,
+    malformed: false,
+  };
+}
+
+function parseProgramType(value: unknown) {
+  if (value == null) {
+    return { value: null as ProgramType | null, invalid: false, malformed: false };
+  }
+  if (typeof value !== "string") {
+    return { value: null as ProgramType | null, invalid: false, malformed: true };
+  }
+  const trimmed = value.trim();
+  if (!trimmed) {
+    return { value: null as ProgramType | null, invalid: false, malformed: false };
+  }
+  const match = TYPE_LOOKUP.get(trimmed.toLowerCase()) ?? null;
+  return { value: match, invalid: !match, malformed: false };
+}
+
+function asSocialRecord(value: unknown) {
+  if (typeof value === "string") {
+    const trimmed = value.trim();
+    if (!trimmed) return { record: null, malformed: false, empty: true };
+    try {
+      return asSocialRecord(JSON.parse(trimmed));
+    } catch {
+      return { record: null, malformed: true, empty: false };
+    }
+  }
+  if (value == null) return { record: null, malformed: false, empty: true };
+  if (typeof value !== "object" || Array.isArray(value)) {
+    return { record: null, malformed: true, empty: false };
+  }
+  return { record: value as Record<string, unknown>, malformed: false, empty: false };
+}
+
+function parseSocialMedia(value: unknown) {
+  const parsed = asSocialRecord(value);
+  const fieldErrors: Partial<Record<SocialMediaKey, string>> = {};
+  const links: SocialMediaLinks = { ...EMPTY_SOCIAL_MEDIA };
+  if (parsed.empty || !parsed.record) {
+    return { links, fieldErrors, malformed: parsed.malformed };
+  }
+
+  for (const key of SOCIAL_MEDIA_KEYS) {
+    const raw = parsed.record[key];
+    if (raw == null || raw === "") continue;
+    if (typeof raw !== "string" || !isValidWebsite(raw.trim())) {
+      fieldErrors[key] = "Enter a full address starting with https://.";
+      continue;
+    }
+    links[key] = raw.trim();
+  }
+
+  return { links, fieldErrors, malformed: false };
+}
+
+export function coerceProgramDetails(source: {
+  grades_served?: unknown;
+  program_format?: unknown;
+  program_type?: unknown;
+  social_media?: unknown;
+}) {
+  return {
+    grades_served: parseChoiceList(source.grades_served, GRADE_LOOKUP, GRADE_LEVELS).values,
+    program_format: parseChoiceList(source.program_format, FORMAT_LOOKUP, PROGRAM_FORMATS).values,
+    program_type: parseProgramType(source.program_type).value,
+    social_media: parseSocialMedia(source.social_media).links,
+  };
+}
 
 export function validateOwnerProgramUpdate(body: Record<string, unknown> | Partial<OwnerProgramUpdate>) {
   const errors: string[] = [];
@@ -382,6 +519,31 @@ export function validateOwnerProgramUpdate(body: Record<string, unknown> | Parti
     fieldErrors.website = "Enter a full website address starting with https://.";
   }
 
+  const grades = parseChoiceList(source.grades_served, GRADE_LOOKUP, GRADE_LEVELS);
+  if (grades.malformed) {
+    fieldErrors.grades_served = "Grades served must be a list.";
+  } else if (grades.invalid) {
+    fieldErrors.grades_served = "Choose grades from K, 1-3, 4-6, 7-8, 9-12, and Mixed.";
+  }
+
+  const formats = parseChoiceList(source.program_format, FORMAT_LOOKUP, PROGRAM_FORMATS);
+  if (formats.malformed) {
+    fieldErrors.program_format = "Program format must be a list.";
+  } else if (formats.invalid) {
+    fieldErrors.program_format = "Choose Online, Hybrid, or In-Person.";
+  }
+
+  const programType = parseProgramType(source.program_type);
+  if (programType.malformed || programType.invalid) {
+    fieldErrors.program_type = "Choose a valid program type.";
+  }
+
+  const social = parseSocialMedia(source.social_media);
+  if (social.malformed) {
+    fieldErrors.social_media = "Social media links are not valid.";
+  }
+  Object.assign(fieldErrors, social.fieldErrors);
+
   for (const messageText of Object.values(fieldErrors)) {
     if (messageText) errors.push(messageText);
   }
@@ -398,6 +560,10 @@ export function validateOwnerProgramUpdate(body: Record<string, unknown> | Parti
       contact_email,
       phone: phone || null,
       website: website || null,
+      grades_served: grades.values,
+      program_format: formats.values,
+      program_type: programType.value,
+      social_media: social.links,
     } satisfies OwnerProgramUpdate,
   };
 }

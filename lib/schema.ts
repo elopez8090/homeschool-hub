@@ -1,6 +1,6 @@
 import { siteConfig, absoluteUrl } from "@/lib/seo";
 import { findState, programPath, US_STATES } from "@/lib/states";
-import type { Program } from "@/lib/types";
+import { SOCIAL_MEDIA_KEYS, type Program } from "@/lib/types";
 
 export type BreadcrumbItem = {
   name: string;
@@ -15,6 +15,14 @@ export type FaqEntry = {
 function websiteHref(website: string | null | undefined) {
   if (!website?.trim()) return undefined;
   return website.startsWith("http") ? website : `https://${website}`;
+}
+
+function sameAsLinks(program: Program) {
+  const links = [websiteHref(program.website)];
+  for (const key of SOCIAL_MEDIA_KEYS) {
+    links.push(websiteHref(program.social_media?.[key]));
+  }
+  return links.filter((link): link is string => Boolean(link));
 }
 
 export function generateOrganizationSchema() {
@@ -52,7 +60,7 @@ export function generateBreadcrumbSchema(items: BreadcrumbItem[]) {
 
 export function generateProgramSchema(program: Program) {
   const pageUrl = absoluteUrl(programPath(program.state, program.id));
-  const website = websiteHref(program.website);
+  const sameAs = sameAsLinks(program);
   const stateName = findState(program.state)?.name ?? program.state;
 
   return {
@@ -63,7 +71,7 @@ export function generateProgramSchema(program: Program) {
     url: pageUrl,
     email: program.contact_email || undefined,
     telephone: program.phone || undefined,
-    sameAs: website ? [website] : undefined,
+    sameAs: sameAs.length ? sameAs : undefined,
     address: {
       "@type": "PostalAddress",
       addressLocality: program.city,

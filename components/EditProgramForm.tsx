@@ -4,7 +4,17 @@ import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
 import { useEffect, useMemo, useState } from "react";
 import { findState, programPath, US_STATES } from "@/lib/states";
-import { PROGRAM_CATEGORIES } from "@/lib/types";
+import {
+  GRADE_LEVEL_LABELS,
+  GRADE_LEVELS,
+  PROGRAM_CATEGORIES,
+  PROGRAM_FORMATS,
+  PROGRAM_TYPES,
+  type GradeLevel,
+  type ProgramFormat,
+  type ProgramType,
+  type SocialMediaLinks,
+} from "@/lib/types";
 import {
   OWNER_DESCRIPTION_MAX,
   PROGRAM_SUBMISSION_CATEGORIES,
@@ -21,6 +31,13 @@ type FormState = {
   contact_email: string;
   phone: string;
   website: string;
+  grades_served: GradeLevel[];
+  program_format: ProgramFormat[];
+  program_type: ProgramType | "";
+  facebook: string;
+  instagram: string;
+  youtube: string;
+  twitter: string;
 };
 
 const EMPTY_FORM: FormState = {
@@ -32,10 +49,52 @@ const EMPTY_FORM: FormState = {
   contact_email: "",
   phone: "",
   website: "",
+  grades_served: [],
+  program_format: [],
+  program_type: "",
+  facebook: "",
+  instagram: "",
+  youtube: "",
+  twitter: "",
+};
+
+type LoadedProgram = {
+  name?: string;
+  description?: string;
+  city?: string;
+  state?: string;
+  category?: string;
+  contact_email?: string;
+  phone?: string | null;
+  website?: string | null;
+  grades_served?: GradeLevel[] | null;
+  program_format?: ProgramFormat[] | null;
+  program_type?: ProgramType | null;
+  social_media?: SocialMediaLinks | null;
 };
 
 const INPUT_CLASS =
   "min-h-11 w-full rounded-lg border border-blue-200 bg-white px-3 py-2.5 text-base text-slate-800 outline-none transition placeholder:text-slate-400 focus:border-blue-600 focus:ring-2 focus:ring-blue-200";
+
+function formFromProgram(program: LoadedProgram, stateValue?: string): FormState {
+  return {
+    name: program.name || "",
+    description: program.description || "",
+    city: program.city || "",
+    state: stateValue ?? program.state ?? "",
+    category: program.category || "",
+    contact_email: program.contact_email || "",
+    phone: program.phone || "",
+    website: program.website || "",
+    grades_served: program.grades_served || [],
+    program_format: program.program_format || [],
+    program_type: program.program_type || "",
+    facebook: program.social_media?.facebook || "",
+    instagram: program.social_media?.instagram || "",
+    youtube: program.social_media?.youtube || "",
+    twitter: program.social_media?.twitter || "",
+  };
+}
 
 function formatUpdated(value?: string | null) {
   if (!value) return "";
@@ -95,16 +154,9 @@ export default function EditProgramForm({ programId }: { programId: string }) {
         const program = payload.program;
         if (!cancelled && program) {
           const matchedState = findState(program.state || "");
-          setForm({
-            name: program.name || "",
-            description: program.description || "",
-            city: program.city || "",
-            state: matchedState?.abbreviation || program.state || "",
-            category: program.category || "",
-            contact_email: program.contact_email || "",
-            phone: program.phone || "",
-            website: program.website || "",
-          });
+          setForm(
+            formFromProgram(program, matchedState?.abbreviation || program.state || ""),
+          );
           setUpdatedAt(formatUpdated(program.updated_at));
           setReady(true);
         }
@@ -123,9 +175,43 @@ export default function EditProgramForm({ programId }: { programId: string }) {
     };
   }, [programId]);
 
-  function update(field: keyof FormState, value: string) {
+  function update(
+    field: Exclude<keyof FormState, "grades_served" | "program_format" | "program_type">,
+    value: string,
+  ) {
     setForm((current) => ({ ...current, [field]: value }));
     setFieldErrors((current) => ({ ...current, [field]: undefined }));
+    setSaved(false);
+  }
+
+  function updateProgramType(value: string) {
+    const programType = (PROGRAM_TYPES as readonly string[]).includes(value)
+      ? (value as ProgramType)
+      : "";
+    setForm((current) => ({ ...current, program_type: programType }));
+    setFieldErrors((current) => ({ ...current, program_type: undefined }));
+    setSaved(false);
+  }
+
+  function toggleGrade(value: GradeLevel) {
+    setForm((current) => ({
+      ...current,
+      grades_served: current.grades_served.includes(value)
+        ? current.grades_served.filter((item) => item !== value)
+        : [...current.grades_served, value],
+    }));
+    setFieldErrors((current) => ({ ...current, grades_served: undefined }));
+    setSaved(false);
+  }
+
+  function toggleFormat(value: ProgramFormat) {
+    setForm((current) => ({
+      ...current,
+      program_format: current.program_format.includes(value)
+        ? current.program_format.filter((item) => item !== value)
+        : [...current.program_format, value],
+    }));
+    setFieldErrors((current) => ({ ...current, program_format: undefined }));
     setSaved(false);
   }
 
@@ -143,6 +229,15 @@ export default function EditProgramForm({ programId }: { programId: string }) {
       contact_email: form.contact_email,
       phone: form.phone,
       website: form.website,
+      grades_served: form.grades_served,
+      program_format: form.program_format,
+      program_type: form.program_type,
+      social_media: {
+        facebook: form.facebook,
+        instagram: form.instagram,
+        youtube: form.youtube,
+        twitter: form.twitter,
+      },
     });
     setFieldErrors(nextErrors);
     if (errors.length > 0) {
@@ -173,15 +268,17 @@ export default function EditProgramForm({ programId }: { programId: string }) {
         setFieldErrors(payload.fieldErrors || {});
         throw new Error(payload.error || "Could not save this program.");
       }
-      if (payload.program?.updated_at) {
-        setUpdatedAt(formatUpdated(payload.program.updated_at));
-      }
-      if (payload.program?.state) {
-        const matchedState = findState(payload.program.state);
-        setForm((current) => ({
-          ...current,
-          state: matchedState?.abbreviation || payload.program.state,
-        }));
+      if (payload.program) {
+        const matchedState = findState(payload.program.state || "");
+        setForm(
+          formFromProgram(
+            payload.program,
+            matchedState?.abbreviation || payload.program.state || form.state,
+          ),
+        );
+        if (payload.program.updated_at) {
+          setUpdatedAt(formatUpdated(payload.program.updated_at));
+        }
       }
       setSaved(true);
     } catch (saveError) {
@@ -395,6 +492,109 @@ export default function EditProgramForm({ programId }: { programId: string }) {
           />
         </Field>
 
+        <div className="space-y-5 border-t border-blue-100 pt-5">
+          <div>
+            <h2 className="text-lg font-semibold text-blue-900">Program details</h2>
+            <p className="mt-1 text-sm text-slate-600">
+              Optional details shown on the public listing.
+            </p>
+          </div>
+
+          <CheckboxGroup
+            legend="Grades served"
+            error={fieldErrors.grades_served}
+          >
+            {GRADE_LEVELS.map((grade) => (
+              <CheckboxCard
+                key={grade}
+                checked={form.grades_served.includes(grade)}
+                onChange={() => toggleGrade(grade)}
+                label={GRADE_LEVEL_LABELS[grade]}
+              />
+            ))}
+          </CheckboxGroup>
+
+          <CheckboxGroup legend="Program format" error={fieldErrors.program_format}>
+            {PROGRAM_FORMATS.map((format) => (
+              <CheckboxCard
+                key={format}
+                checked={form.program_format.includes(format)}
+                onChange={() => toggleFormat(format)}
+                label={format}
+              />
+            ))}
+          </CheckboxGroup>
+
+          <Field id="program-type" label="Program type" error={fieldErrors.program_type}>
+            <select
+              id="program-type"
+              value={form.program_type}
+              onChange={(event) => updateProgramType(event.target.value)}
+              className={inputClass(Boolean(fieldErrors.program_type))}
+            >
+              <option value="">Select a type</option>
+              {PROGRAM_TYPES.map((type) => (
+                <option key={type} value={type}>
+                  {type}
+                </option>
+              ))}
+            </select>
+          </Field>
+
+          <fieldset className="space-y-4">
+            <legend className="text-sm font-medium text-blue-900">Social media</legend>
+            {fieldErrors.social_media ? (
+              <p className="text-sm text-red-600">{fieldErrors.social_media}</p>
+            ) : null}
+            <div className="grid gap-5 sm:grid-cols-2">
+              <Field id="program-facebook" label="Facebook URL" error={fieldErrors.facebook}>
+                <input
+                  id="program-facebook"
+                  type="url"
+                  inputMode="url"
+                  value={form.facebook}
+                  onChange={(event) => update("facebook", event.target.value)}
+                  placeholder="https://facebook.com/..."
+                  className={inputClass(Boolean(fieldErrors.facebook))}
+                />
+              </Field>
+              <Field id="program-instagram" label="Instagram URL" error={fieldErrors.instagram}>
+                <input
+                  id="program-instagram"
+                  type="url"
+                  inputMode="url"
+                  value={form.instagram}
+                  onChange={(event) => update("instagram", event.target.value)}
+                  placeholder="https://instagram.com/..."
+                  className={inputClass(Boolean(fieldErrors.instagram))}
+                />
+              </Field>
+              <Field id="program-youtube" label="YouTube URL" error={fieldErrors.youtube}>
+                <input
+                  id="program-youtube"
+                  type="url"
+                  inputMode="url"
+                  value={form.youtube}
+                  onChange={(event) => update("youtube", event.target.value)}
+                  placeholder="https://youtube.com/..."
+                  className={inputClass(Boolean(fieldErrors.youtube))}
+                />
+              </Field>
+              <Field id="program-twitter" label="Twitter URL" error={fieldErrors.twitter}>
+                <input
+                  id="program-twitter"
+                  type="url"
+                  inputMode="url"
+                  value={form.twitter}
+                  onChange={(event) => update("twitter", event.target.value)}
+                  placeholder="https://twitter.com/..."
+                  className={inputClass(Boolean(fieldErrors.twitter))}
+                />
+              </Field>
+            </div>
+          </fieldset>
+        </div>
+
         <div className="flex flex-col gap-3 sm:flex-row sm:items-center">
           <button
             type="submit"
@@ -427,6 +627,52 @@ function inputClass(invalid: boolean) {
   return invalid
     ? `${INPUT_CLASS} border-red-400 focus:border-red-500 focus:ring-red-200`
     : INPUT_CLASS;
+}
+
+function CheckboxGroup({
+  legend,
+  error,
+  children,
+}: {
+  legend: string;
+  error?: string;
+  children: React.ReactNode;
+}) {
+  return (
+    <fieldset>
+      <legend className="mb-2 text-sm font-medium text-blue-900">{legend}</legend>
+      <div className="grid grid-cols-2 gap-2 sm:grid-cols-3">{children}</div>
+      {error ? <span className="mt-1 block text-sm text-red-600">{error}</span> : null}
+    </fieldset>
+  );
+}
+
+function CheckboxCard({
+  checked,
+  onChange,
+  label,
+}: {
+  checked: boolean;
+  onChange: () => void;
+  label: string;
+}) {
+  return (
+    <label
+      className={`flex min-h-11 cursor-pointer items-center gap-2 rounded-lg border px-3 py-2 text-sm ${
+        checked
+          ? "border-blue-700 bg-blue-50 font-medium text-blue-900"
+          : "border-blue-200 text-slate-800 hover:bg-blue-50"
+      }`}
+    >
+      <input
+        type="checkbox"
+        checked={checked}
+        onChange={onChange}
+        className="h-4 w-4 shrink-0 rounded border-blue-300 text-blue-700 accent-blue-700 focus:ring-2 focus:ring-blue-200"
+      />
+      {label}
+    </label>
+  );
 }
 
 function Field({

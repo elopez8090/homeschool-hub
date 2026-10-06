@@ -3,8 +3,12 @@ import { checkProgramOwnership, getOwnerSession } from "@/lib/auth-owner";
 import { programListingUrl } from "@/lib/emails/brand";
 import { sendProgramUpdatedEmail } from "@/lib/email-service";
 import { getServerSupabase } from "@/lib/supabase-server";
-import type { Program } from "@/lib/types";
-import { validateOwnerProgramUpdate, type OwnerProgramUpdate } from "@/lib/validation";
+import { formatGradesServed, type Program } from "@/lib/types";
+import {
+  coerceProgramDetails,
+  validateOwnerProgramUpdate,
+  type OwnerProgramUpdate,
+} from "@/lib/validation";
 
 type RouteContext = {
   params: { id: string };
@@ -13,6 +17,7 @@ type RouteContext = {
 const PERMISSION_ERROR = "You don't have permission to edit this program";
 
 function toOwnerProgram(program: Program) {
+  const details = coerceProgramDetails(program);
   return {
     id: program.id,
     name: program.name,
@@ -26,6 +31,10 @@ function toOwnerProgram(program: Program) {
     owner_verified: program.owner_verified ?? Boolean(program.claimed_by),
     updated_at: program.updated_at || program.claimed_at || program.created_at || null,
     claimed_at: program.claimed_at || null,
+    grades_served: details.grades_served,
+    program_format: details.program_format,
+    program_type: details.program_type,
+    social_media: details.social_media,
   };
 }
 
@@ -37,7 +46,8 @@ function clip(value: string | null | undefined) {
 }
 
 function listChanges(before: Program, after: OwnerProgramUpdate) {
-  const fields: Array<[string, string | null | undefined, string | null]> = [
+  const previous = coerceProgramDetails(before);
+  const fields: Array<[string, string | null | undefined, string | null | undefined]> = [
     ["Program name", before.name, after.name],
     ["Description", before.description, after.description],
     ["City", before.city, after.city],
@@ -46,6 +56,13 @@ function listChanges(before: Program, after: OwnerProgramUpdate) {
     ["Contact email", before.contact_email, after.contact_email],
     ["Phone", before.phone, after.phone],
     ["Website", before.website, after.website],
+    ["Grades served", formatGradesServed(previous.grades_served), formatGradesServed(after.grades_served)],
+    ["Format", previous.program_format.join(", "), after.program_format.join(", ")],
+    ["Program type", previous.program_type, after.program_type],
+    ["Facebook", previous.social_media.facebook, after.social_media.facebook],
+    ["Instagram", previous.social_media.instagram, after.social_media.instagram],
+    ["YouTube", previous.social_media.youtube, after.social_media.youtube],
+    ["Twitter", previous.social_media.twitter, after.social_media.twitter],
   ];
 
   return fields
@@ -130,6 +147,10 @@ export async function PUT(request: NextRequest, context: RouteContext) {
         contact_email: data.contact_email,
         phone: data.phone,
         website: data.website,
+        grades_served: data.grades_served,
+        program_format: data.program_format,
+        program_type: data.program_type,
+        social_media: data.social_media,
         updated_at: new Date().toISOString(),
       })
       .eq("id", current.id)
