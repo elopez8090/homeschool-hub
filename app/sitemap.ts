@@ -68,8 +68,7 @@ export default async function sitemap(): Promise<MetadataRoute.Sitemap> {
 
   const programEntries: MetadataRoute.Sitemap = programs.map((program) => ({
     url: `${siteConfig.url}${programPath(program.state, program.id)}`,
-    lastModified: program.updated_at || program.created_at || now,
-    changeFrequency: "weekly",
+    lastModified: new Date(program.updated_at || program.created_at || now.toISOString()),
     priority: 0.6,
   }));
 
