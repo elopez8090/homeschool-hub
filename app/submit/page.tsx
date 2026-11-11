@@ -1,6 +1,7 @@
 "use client";
 
 import Link from "next/link";
+import { Turnstile } from "@marsidev/react-turnstile";
 import { useRef, useState } from "react";
 import { US_STATES } from "@/lib/states";
 import {
@@ -50,7 +51,9 @@ export default function SubmitProgramPage() {
   const [formError, setFormError] = useState("");
   const [submitting, setSubmitting] = useState(false);
   const [submitted, setSubmitted] = useState<SubmittedProgram | null>(null);
-
+  const [turnstileToken, setTurnstileToken] = useState("");
+  const [hpCompany, setHpCompany] = useState("");
+  const [turnstileKey, setTurnstileKey] = useState(0);
   function updateField<K extends keyof FormState>(field: K, value: FormState[K]) {
     setForm((current) => ({ ...current, [field]: value }));
     const errorKey = field === "contactEmail" ? "contactEmail" : field;
@@ -103,6 +106,8 @@ export default function SubmitProgramPage() {
           phone: data.phone,
           website: data.website,
           certified: true,
+          turnstileToken,
+          hp_company: hpCompany,
         }),
       });
       const payload = (await response.json()) as {
@@ -112,6 +117,9 @@ export default function SubmitProgramPage() {
       };
 
       if (!response.ok) {
+        setTurnstileToken("");
+        setTurnstileKey((key) => key + 1);
+
         if (payload.fieldErrors) setFieldErrors(payload.fieldErrors);
         throw new Error(payload.error || payload.message || "Unable to submit this program.");
       }
@@ -479,6 +487,25 @@ export default function SubmitProgramPage() {
                     ) : null}
                   </div>
 
+                  <input
+                    type="text"
+                    name="hp_company"
+                    tabIndex={-1}
+                    autoComplete="off"
+                    aria-hidden="true"
+                    value={hpCompany}
+                    onChange={(event) => setHpCompany(event.target.value)}
+                    style={{ position: "absolute", left: "-9999px", width: 1, height: 1, opacity: 0 }}
+                  />
+
+                  <Turnstile
+                    key={turnstileKey}
+                    siteKey={process.env.NEXT_PUBLIC_TURNSTILE_SITE_KEY!}
+                    onSuccess={(token) => setTurnstileToken(token)}
+                    onExpire={() => setTurnstileToken("")}
+                    onError={() => setTurnstileToken("")}
+                  />
+
                   {formError ? (
                     <p
                       role="alert"
@@ -490,7 +517,7 @@ export default function SubmitProgramPage() {
 
                   <button
                     type="submit"
-                    disabled={submitting}
+                    disabled={submitting || !turnstileToken}
                     className="inline-flex min-h-11 w-full items-center justify-center rounded-lg bg-blue-700 px-4 py-2.5 text-sm font-semibold text-white hover:bg-blue-800 disabled:cursor-not-allowed disabled:bg-blue-300"
                   >
                     {submitting ? "Submitting..." : "Submit Program"}
